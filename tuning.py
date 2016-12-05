@@ -226,7 +226,7 @@ def anomaly_tuning(X,
             vol_tot_cube)
         for train, test in cv.split(X))
 
-    models = list(zip(*res)[0])
-    offsets = np.array(zip(*res)[1])
+    models = list(list(zip(*res))[0])
+    offsets = np.array(list(zip(*res))[1])
 
     return models, offsets

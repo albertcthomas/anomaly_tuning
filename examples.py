@@ -23,6 +23,8 @@ matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
 
 # Generating Gaussian mixture sample
 
+N_JOBS = 1  # set to -1 to use all your CPUs
+
 n_samples = 1000
 n_features = 2
 weight_1 = 0.5
@@ -76,13 +78,13 @@ cv = ShuffleSplit(n_splits=n_estimator, test_size=0.2, random_state=42)
 for algo in algorithms:
 
     name_algo = algo.name
-    print '--------------', name_algo, ' -------------'
+    print('--------------', name_algo, ' -------------')
     parameters = algo_param[name_algo]
 
     models, offsets = anomaly_tuning(X, base_estimator=algo,
                                      parameters=parameters,
                                      random_state=42,
-                                     cv=cv, n_jobs=-1)
+                                     cv=cv, n_jobs=N_JOBS)
 
     Z = np.zeros((np.shape(grid)[0],))
     Z_data = np.zeros((n_samples,))
