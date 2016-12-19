@@ -1,8 +1,6 @@
 # Authors: Albert Thomas
 #          Alexandre Gramfort
-# Paper: Thomas, Clemencon, Feuillard, Gramfort (2016),
-# Learning hyperparameters for unsupervised anomaly detection,
-# Anomaly Detection Workshop, ICML 2016.
+# License: BSD (3-clause)
 
 import logging
 
@@ -15,7 +13,7 @@ from sklearn.metrics import auc
 from sklearn.utils import check_random_state
 from sklearn.externals.joblib import Parallel, delayed
 
-from estimators import AverageKLPE
+from .estimators import AverageKLPE
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG,

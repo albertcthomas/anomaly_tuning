@@ -1,4 +1,7 @@
-# Author: Albert Thomas
+# Authors: Albert Thomas
+#          Alexandre Gramfort
+# License: BSD (3-clause)
+
 # Gaussian Mixture class inspired from scikit-learn GaussianMixture module to
 # sample and compute density of a Gaussian mixture model.
 
@@ -7,7 +10,7 @@ import numpy as np
 from scipy.stats import multivariate_normal
 
 
-class Gaussian_Mixture(object):
+class GaussianMixture(object):
     """ Gaussian mixture.
 
     Parameters
@@ -23,9 +26,7 @@ class Gaussian_Mixture(object):
 
     random_state : int
         Seed used by the random number generator.
-
     """
-
     def __init__(self, weights, means, covars, random_state=42):
 
         self.weights = weights

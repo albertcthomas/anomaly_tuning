@@ -1,5 +1,7 @@
 # Authors: Albert Thomas
 #          Alexandre Gramfort
+# License: BSD (3-clause)
+
 # Anomaly detection estimators used in the papers. Except for the ones based
 # on k-NN (AverageKLPE, MaxKLPE), the others are implemented in scikit-learn.
 
