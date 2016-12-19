@@ -6,7 +6,7 @@ To install the package, run:
 
 	python setup.py install --user
 
-A demo is presented in the notebook: demo_automaly_tuning.ipynb
+A demo is presented in the notebook: [demo_automaly_tuning.ipynb](https://github.com/albertcthomas/anomaly_tuning/blob/master/demo_automaly_tuning.ipynb)
 
 Description of the files:
 
