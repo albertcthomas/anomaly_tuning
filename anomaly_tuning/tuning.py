@@ -77,8 +77,8 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
 
         clf = base_estimator(**param)
         clf = clf.fit(X_train)
-        clf_U = clf.score(U)
-        clf_test = clf.score(X_test)
+        clf_U = clf.score_samples(U)
+        clf_test = clf.score_samples(X_test)
         min_test = np.min(clf_test)
         max_test = np.max(clf_test)
 
@@ -105,7 +105,7 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
     clf_est = base_estimator(**best_param)
     clf_est.fit(X_train)
 
-    clf_test = clf_est.score(X_test)
+    clf_test = clf_est.score_samples(X_test)
     min_test = np.min(clf_test)
     max_test = np.max(clf_test)
 

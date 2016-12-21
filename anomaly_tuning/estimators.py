@@ -111,7 +111,7 @@ class KLPE(BaseEstimator):
 
         return dists
 
-    def score(self, X):
+    def score_samples(self, X):
         """Computes the score of each observation in the data set X with the
         convention of our paper: the smaller the score the more abnormal the
         observation.
@@ -227,7 +227,7 @@ class OCSVM(OneClassSVM):
         gamma = 1. / (2. * sigma ** 2)
         OneClassSVM.__init__(self, gamma=gamma, nu=nu)
 
-    def score(self, X):
+    def score_samples(self, X):
         """Scoring function of the estimator.
 
         Parameters
@@ -250,7 +250,7 @@ class IsolationForest(ensemble.IsolationForest):
 
     name = 'iforest'
 
-    def score(self, X):
+    def score_samples(self, X):
         """ Scoring function of the estimator.
 
         Parameters
@@ -272,19 +272,3 @@ class KernelSmoothing(KernelDensity):
     """Anomaly detection estimator based on plug-in approach."""
 
     name = 'ks'
-
-    def score(self, X):
-        """ Scoring function of the estimator.
-
-        Parameters
-        ----------
-        X : array, shape (n_samples, n_features)
-            Input data set.
-
-        Returns
-        -------
-        score : array, shape (n_samples,)
-            Returns scores of the samples.
-
-        """
-        return self.score_samples(X)

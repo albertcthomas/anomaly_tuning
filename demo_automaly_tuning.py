@@ -10,10 +10,10 @@ from scipy.stats.mstats import mquantiles
 
 from sklearn.model_selection import ShuffleSplit
 
-from estimators import (AverageKLPE, MaxKLPE, OCSVM,
-                        KernelSmoothing, IsolationForest)
-from tuning import anomaly_tuning
-from utils import Gaussian_Mixture
+from anomaly_tuning.estimators import (AverageKLPE, MaxKLPE, OCSVM,
+                                       KernelSmoothing, IsolationForest)
+from anomaly_tuning import anomaly_tuning
+from anomaly_tuning.utils import GaussianMixture
 
 # Matplotlib configuration
 font = {'weight': 'normal',
@@ -37,7 +37,7 @@ weights = np.array([weight_1, weight_2])
 means = np.array([mean_1, mean_2])
 covars = np.array([cov_1, cov_2])
 
-gm = Gaussian_Mixture(weights, means, covars, random_state=42)
+gm = GaussianMixture(weights, means, covars, random_state=42)
 X = gm.sample(n_samples)
 
 alpha_set = 0.95
@@ -90,8 +90,8 @@ for algo in algorithms:
     Z_data = np.zeros((n_samples,))
     for n_est in range(n_estimator):
         clf = models[n_est]
-        Z += 1. / n_estimator * (clf.score(grid))
-        Z_data += 1. / n_estimator * (clf.score(X))
+        Z += 1. / n_estimator * (clf.score_samples(grid))
+        Z_data += 1. / n_estimator * (clf.score_samples(X))
 
     off_data = mquantiles(Z_data, 1 - alpha_set)
 
