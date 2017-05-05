@@ -6,7 +6,7 @@ import logging
 
 import numpy as np
 
-from scipy.optimize import bisect
+from scipy.stats.mstats import mquantiles
 
 from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import auc
@@ -29,25 +29,12 @@ def _compute_volumes(score_function, alphas, X_test, U, vol_tot_cube):
 
     score_U = score_function(U)
     score_test = score_function(X_test)
-    min_test = np.min(score_test)
-    max_test = np.max(score_test)
 
-    vol_p = np.zeros(len(alphas))
-    offsets_p = np.zeros(len(alphas))
-
-    for a, alpha in enumerate(alphas):
-
-        def f(x):
-            return np.mean((score_test - x) >= 0) - alpha
-
-        b = bisect(f, min_test - 1e-12, max_test + 1e-12, xtol=1e-12,
-                   maxiter=1000, full_output=False)
-        b = b - 1e-12  # for robustness of the code
-
-        U_inliers = (score_U - b >= 0)
-
-        vol_p[a] = vol_tot_cube * np.mean(U_inliers)
-        offsets_p[a] = b
+    # compute offsets
+    offsets_p = mquantiles(score_test, 1 - alphas)
+    # compute volumes of associated level sets
+    vol_p = (np.array([np.mean(score_U >= offset) for offset in offsets_p]) *
+             vol_tot_cube)
 
     return vol_p, offsets_p
 
@@ -58,8 +45,8 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
     splitting of the data set into X_train and X_test.
 
     Returns base_estimator instantiated with the best hyperparameter and
-    fitted on X_train and the offsets of the score method corresponding to
-    the probabilities of the alphas array.
+    fitted on X_train and the offsets of the score_sample method corresponding
+    to the probabilities of the alphas array.
 
     Parameters
     ----------
@@ -85,9 +72,6 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
         Uniformly distributed samples to compute the volume of the estimated
         sets.
 
-    vol : array, shape (n_alphas, n_hyperparameters)
-        Indicator function of the estimated set of the samples U.
-
     vol_tot_cube : float
         Volume of the hypercube enclosing the data.
 
@@ -105,8 +89,9 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
     offsets_all = np.zeros((len(alphas), len(param_grid)))
     auc_est = np.zeros(len(param_grid))
 
+    # Grid search of best hyperparameters
     for p, param in enumerate(param_grid):
-
+        # fit classifier with given parameters
         clf = base_estimator(**param)
         clf = clf.fit(X_train)
         score_function = clf.score_samples
