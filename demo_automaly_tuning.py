@@ -83,10 +83,10 @@ for algo in algorithms:
     print('--------------', name_algo, ' -------------')
     parameters = algo_param[name_algo]
 
-    models, offsets = anomaly_tuning(X, base_estimator=algo,
-                                     parameters=parameters,
-                                     random_state=42,
-                                     cv=cv, n_jobs=N_JOBS)
+    models, _ = anomaly_tuning(X, base_estimator=algo,
+                               parameters=parameters,
+                               random_state=42,
+                               cv=cv, n_jobs=N_JOBS)
 
     Z = np.zeros((np.shape(grid)[0],))
     Z_data = np.zeros((n_samples,))
@@ -96,9 +96,6 @@ for algo in algorithms:
         Z_data += 1. / n_estimator * (clf.score_samples(X))
 
     off_data = mquantiles(Z_data, 1 - alpha_set)
-
-    # Printing proba of the estimated MV sets
-    emp_proba = np.mean(Z_data - off_data >= 0)
 
     X_outliers = X[Z_data - off_data < 0, :]
 
