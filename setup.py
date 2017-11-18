@@ -2,7 +2,8 @@
 import setuptools  # noqa; we are using a setuptools namespace
 from numpy.distutils.core import setup
 
-descr = """Automated rejection and repair of epochs in M/EEG."""
+descr = """Learning hyperparameters of unsupervised anomaly detection
+        algorithms."""
 
 DISTNAME = 'anomaly_tuning'
 DESCRIPTION = descr
