@@ -225,7 +225,7 @@ class OCSVM(OneClassSVM):
 
     def __init__(self, sigma=1.0, nu=0.4):
         gamma = 1. / (2. * sigma ** 2)
-        OneClassSVM.__init__(self, gamma=gamma, nu=nu)
+        super(OCSVM, self).__init__(gamma=gamma, nu=nu)
 
     def score_samples(self, X):
         """Scoring function of the estimator.
