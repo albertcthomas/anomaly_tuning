@@ -7,8 +7,6 @@
 
 import numpy as np
 
-from scipy.stats import scoreatpercentile
-
 from sklearn import ensemble
 from sklearn.base import BaseEstimator
 from sklearn.svm import OneClassSVM
@@ -93,8 +91,7 @@ class KLPE(BaseEstimator):
         elif algo == 'average':
             self.scores_fit_ = - np.mean(dist_fit, axis=1)
 
-        self.threshold_ = -scoreatpercentile(
-            -self.scores_fit_, 100. * (1. - self.contamination))
+        self.threshold_ = np.percentile(self.scores_fit_, self.contamination)
 
         return self
 
