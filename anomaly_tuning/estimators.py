@@ -7,6 +7,8 @@
 
 import numpy as np
 
+from scipy.stats import scoreatpercentile
+
 from sklearn import ensemble
 from sklearn.base import BaseEstimator
 from sklearn.svm import OneClassSVM
@@ -30,14 +32,23 @@ class KLPE(BaseEstimator):
     algo : string, optional (default='average')
         Specify how the scoring function is estimated. If algo is 'max', the
         score of x is the distance of x to its k-th nearest neighbor in the
-        data set X_train.
+        training data set.
         If algo is 'average', the score of x is the average of its distances
-        to its k-th nearest neighbors in the data set X_train.
+        to its k-th nearest neighbors in the training data set.
 
-    threshold : float, optional (default=0.05)
-        Threshold to declare wether an observation is abnormal or not. An
+    novelty : boolean, optional (default=False)
+        Whether the algorithm is to be applied for outlier detection
+        (novelty=False) or novelty detection (novelty=True).
+        If novelty=False then the score_samples method is only meant to be
+        applied on the training samples, a query point not being considered
+        its own neighbor. If novelty=True then the score_samples method is only
+        meant to be applied on test samples.
+
+    contamination : float, optional (default=0.05)
+        Value to declare wether an observation is abnormal or not. An
         observation is declared abnormal if its score belongs to the
-        (threshold * 100)% lowest scores. Should be in (0, 1).
+        (contamination * 100)% lowest scores of the training set.
+        Should be in (0, 1).
 
     References
     ----------
@@ -51,70 +62,46 @@ class KLPE(BaseEstimator):
 
     name = 'klpe'
 
-    def __init__(self, k=6, algo='average', threshold=0.05):
+    def __init__(self, k=6, algo='average', novelty=False, contamination=0.05):
 
         self.k = k
         self.algo = algo
-        self.threshold = threshold
+        self.contamination = contamination
+        self.novelty = novelty
 
-    def fit(self, X_train):
-        """For each observation in X_train, computes the distance of the k+1
-        nearest neighbors in X_train.
-
-        Parameters
-        ----------
-        X_train : array, shape (n_samples, n_features)
-            Training data set.
-
-        """
-
-        k = self.k
-
-        n_samples, n_features = X_train.shape
-
-        nbrs = NearestNeighbors(n_neighbors=k + 1).fit(X_train)
-        dist, _ = nbrs.kneighbors(X_train)
-
-        self.nbrs_ = nbrs
-        self.X_train_ = X_train
-        self.dist_train_ = dist
-
-        return self
-
-    def _get_dist(self, X):
-        """Computes the distances of each observation in the data set X to its
-        neighbors in X_train.
+    def fit(self, X):
+        """Fits a k nearest neighbors estimator and computes scores on the
+        training samples.
 
         Parameters
         ----------
         X : array, shape (n_samples, n_features)
-            Data set.
-
-        Returns
-        -------
-        dists : array, shape (n_samples,)
-            Distances of the samples X to their neighbors in X_train.
-
+            Training data set.
         """
 
         k = self.k
-        nbrs = self.nbrs_
-        X_train = self.X_train_
-        dist_train = self.dist_train_
+        algo = self.algo
 
-        n_samples, n_features = np.shape(X)
+        nbrs = NearestNeighbors(n_neighbors=k).fit(X)
+        self.nbrs_ = nbrs
 
-        dists = dist_train[:, 1:]  # exclude the point itself
+        # Compute scores on training sample. The opposite of the scores
+        # is returned to respect the convention "the higher the better".
+        dist_fit, _ = nbrs.kneighbors()
+        if algo == 'max':
+            self.scores_fit_ = - np.max(dist_fit, axis=1)
+        elif algo == 'average':
+            self.scores_fit_ = - np.mean(dist_fit, axis=1)
 
-        if not np.array_equal(X_train, X):
-            dists, _ = nbrs.kneighbors(X, n_neighbors=k)
+        self.threshold_ = -scoreatpercentile(
+            -self.scores_fit_, 100. * (1. - self.contamination))
 
-        return dists
+        return self
 
     def score_samples(self, X):
         """Computes the score of each observation in the data set X with the
-        convention of our paper: the smaller the score the more abnormal the
-        observation.
+        convention "the higher the better", i.e. the smaller the score the
+        more abnormal the observation.
 
         Parameters
         ----------
@@ -124,27 +111,35 @@ class KLPE(BaseEstimator):
         Returns
         -------
         score : array, shape (n_samples,)
-            Returns the scoring function of the samples.
-
+            Returns the scores of the samples.
         """
 
         algo = self.algo
+        novelty = self.novelty
+        nbrs = self.nbrs_
 
-        dists = self._get_dist(X)
+        # The opposite of the scores is returned to respect the convention
+        # "the higher the better".
+        if novelty:
+            # Compute scores for test samples
+            dists, _ = nbrs.kneighbors(X)
+            if algo == 'max':
+                scores = - np.max(dists, axis=1)
+            elif algo == 'average':
+                scores = - np.mean(dists, axis=1)
+        else:
+            # compute distances for training samples without considering the
+            # query point its own neighbor
+            scores = self.scores_fit_
 
-        if algo == 'max':
-            score = - np.max(dists, axis=1)  # - because of convention
-        elif algo == 'average':
-            score = - np.mean(dists, axis=1)  # - because of convention
-
-        return score
+        return scores
 
     def predict(self, X):
         """Predict class for X : +1 if normal, 0 if abnormal. Respects
         scikit-learn convention "the higher, the better".
 
         The anomalies are the observations whose scores belong to the
-        (threshold * 100)% lowest scores of the training set.
+        (contamination * 100)% lowest scores of the training set.
 
         Parameters
         ----------
@@ -153,23 +148,13 @@ class KLPE(BaseEstimator):
 
         Returns
         -------
-        Y : array, shape (n_samples,)
+        y : array, shape (n_samples,)
             Predicted classes.
-
         """
 
-        n_samples, _ = X.shape
+        pred = (self.score_samples(X) >= self.threshold_).astype(int)
 
-        dists_train = self._get_dist(self.X_train_)
-        dists_test = self._get_dist(X)
-
-        proba = np.zeros(n_samples)
-        for i in range(n_samples):
-            proba[i] = np.mean(dists_train >= dists_test[i])
-
-        Y = proba >= self.threshold
-
-        return Y.astype(int)
+        return pred
 
 
 class AverageKLPE(KLPE):
@@ -180,13 +165,27 @@ class AverageKLPE(KLPE):
     k : integer, optional (default=6)
         Number of neighbors to consider
 
+    novelty : boolean, optional (default=False)
+        Whether the algorithm is to be applied for outlier detection
+        (novelty=False) or novelty detection (novelty=True).
+        If novelty=False then the score_samples method is only meant to be
+        applied on the training samples, a query point not being considered
+        its own neighbor. If novelty=True then the score_samples method is only
+        meant to be applied on test samples.
+
+    contamination : float, optional (default=0.05)
+        Value to declare wether an observation is abnormal or not. An
+        observation is declared abnormal if its score belongs to the
+        (contamination * 100)% lowest scores of the training set.
+        Should be in (0, 1).
     """
 
     name = 'aklpe'
 
-    def __init__(self, k=6):
-        self.k = k
-        self.algo = 'average'
+    def __init__(self, k=6, novelty=False, contamination=0.05):
+
+        super(AverageKLPE, self).__init__(k=k, algo='average', novelty=novelty,
+                                          contamination=contamination)
 
 
 class MaxKLPE(KLPE):
@@ -197,13 +196,27 @@ class MaxKLPE(KLPE):
     k : integer, optional (default=6)
         Number of neighbors to consider
 
+    novelty : boolean, optional (default=False)
+        Whether the algorithm is to be applied for outlier detection
+        (novelty=False) or novelty detection (novelty=True).
+        If novelty=False then the score_samples method is only meant to be
+        applied on the training samples, a query point not being considered
+        its own neighbor. If novelty=True then the score_samples method is only
+        meant to be applied on test samples.
+
+    contamination : float, optional (default=0.05)
+        Value to declare wether an observation is abnormal or not. An
+        observation is declared abnormal if its score belongs to the
+        (contamination * 100)% lowest scores of the training set.
+        Should be in (0, 1).
     """
 
     name = 'mklpe'
 
-    def __init__(self, k=6):
-        self.k = k
-        self.algo = 'max'
+    def __init__(self, k=6, novelty=False, contamination=0.05):
+
+        super(MaxKLPE, self).__init__(k=k, algo='max', novelty=novelty,
+                                      contamination=contamination)
 
 
 class OCSVM(OneClassSVM):
@@ -218,7 +231,6 @@ class OCSVM(OneClassSVM):
 
     nu : float, optional (default=0.4)
         nu parameter of the OneClassSVM algorithm. Should be in (0, 1].
-
     """
 
     name = 'ocsvm'
@@ -239,7 +251,6 @@ class OCSVM(OneClassSVM):
         -------
         score : array, shape (n_samples,)
             Returns scores of the samples.
-
         """
 
         return self.decision_function(X).ravel()
@@ -262,7 +273,6 @@ class IsolationForest(ensemble.IsolationForest):
         -------
         score : array, shape (n_samples,)
             Returns scores of the samples.
-
         """
 
         return self.decision_function(X)

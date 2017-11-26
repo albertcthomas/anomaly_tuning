@@ -41,22 +41,6 @@ def test_score_samples_estimators():
                        clf_2.decision_function(X).ravel())
 
 
-def test_klpe_get_dist():
-    """Check the distances for KLPE."""
-
-    X_train = np.array([[0, 0], [1, 1], [3, 1]])
-    dist_train_true = np.array([[np.sqrt(2)], [np.sqrt(2)], [2]])
-    X_test = np.array([[-1, 0], [-1, 1]])
-    dist_test_true = np.array([[1], [np.sqrt(2)]])
-
-    clf = KLPE(k=1)
-    clf.fit(X_train)
-    dist_train = clf._get_dist(X_train)
-    assert_array_almost_equal(dist_train_true, dist_train)
-    dist_test = clf._get_dist(X_test)
-    assert_array_almost_equal(dist_test_true, dist_test)
-
-
 def test_averageklpe_score_samples():
     """Check score_samples for average KLPE"""
 
@@ -68,10 +52,14 @@ def test_averageklpe_score_samples():
     score_test_true = - np.array([(1 + np.sqrt(5)) / 2,
                                   (np.sqrt(2) + 2) / 2])
 
+    # check scores when novelty=False, i.e. scores of X_train itself
     clf = AverageKLPE(k=2)
     clf.fit(X_train)
     score_train = clf.score_samples(X_train)
     assert_array_almost_equal(score_train, score_train_true)
+    # check scores when novelty=True, i.e. scores of test samples
+    clf = AverageKLPE(k=2, novelty=True)
+    clf.fit(X_train)
     score_test = clf.score_samples(X_test)
     assert_array_almost_equal(score_test, score_test_true)
 
@@ -84,9 +72,13 @@ def test_maxklpe_score_samples():
     X_test = np.array([[-1, 0], [-1, 1]])
     score_test_true = - np.array([np.sqrt(5), 2])
 
+    # check scores when novelty=False, i.e. scores of X_train itself
     clf = MaxKLPE(k=2)
     clf.fit(X_train)
     score_train = clf.score_samples(X_train)
     assert_array_almost_equal(score_train, score_train_true)
+    # check scores when novelty=True, i.e. scores of test samples
+    clf = MaxKLPE(k=2, novelty=True)
+    clf.fit(X_train)
     score_test = clf.score_samples(X_test)
     assert_array_almost_equal(score_test, score_test_true)
