@@ -64,8 +64,10 @@ Z_true = Z_true.reshape(xx.shape)
 
 
 algorithms = [AverageKLPE, MaxKLPE, OCSVM, IsolationForest, KernelSmoothing]
-algo_param = {'aklpe': {'k': np.arange(1, min(50, int(0.8 * n_samples)), 2)},
-              'mklpe': {'k': np.arange(1, min(50, int(0.8 * n_samples)), 2)},
+algo_param = {'aklpe': {'k': np.arange(1, min(50, int(0.8 * n_samples)), 2),
+                        'novelty': [True]},
+              'mklpe': {'k': np.arange(1, min(50, int(0.8 * n_samples)), 2),
+                        'novelty': [True]},
               'ocsvm': {'sigma': np.linspace(0.01, 5., 50)},
               'iforest': {'max_samples': np.linspace(0.1, 1., 10)},
               'ks': {'bandwidth': np.linspace(0.01, 5., 50)},
