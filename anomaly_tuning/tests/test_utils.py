@@ -5,6 +5,7 @@ import numpy as np
 
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_almost_equal
+from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_array_almost_equal
 
 from anomaly_tuning.utils import GaussianMixture
@@ -46,3 +47,9 @@ def test_sample():
     assert_array_almost_equal(covars, emp_covs, decimal=1)
     assert_array_almost_equal(means, emp_means, decimal=1)
     assert_almost_equal(np.mean(y_s == 0), weight_1, decimal=1)
+
+    # check we get same X when return_labels=False
+    gm_2 = GaussianMixture(weights, means, covars, random_state=random_state)
+    n_samples = 20000
+    X_s_2 = gm_2.sample(n_samples)
+    assert_array_equal(X_s, X_s_2)
