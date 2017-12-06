@@ -9,6 +9,8 @@ import numpy as np
 
 from scipy.stats import multivariate_normal
 
+from sklearn.utils import check_random_state
+
 
 class GaussianMixture(object):
     """Gaussian mixture.
@@ -26,10 +28,13 @@ class GaussianMixture(object):
 
     return_labels : boolean, optional (default=False)
         Whether to return component labels when sampling from the Gaussian
-        Mixture. These labels are useful to test the sample method.
+        Mixture. These labels are useful to test the `sample` method.
 
-    random_state : int
-        Seed used by the random number generator.
+    random_state : int, RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
     """
 
     def __init__(self, weights, means, covars, return_labels=False,
@@ -56,8 +61,8 @@ class GaussianMixture(object):
 
         y : array, shape (nsamples,)
             Component labels. The component labels are computed and returned
-            for the sake of testing when the attribute return_labels is set to
-            True.
+            for the sake of testing when the attribute `return_labels` is set
+            to True.
         """
 
         weights = self.weights
@@ -65,7 +70,7 @@ class GaussianMixture(object):
         covars = self.covars
         random_state = self.random_state
 
-        rng = np.random.RandomState(random_state)
+        rng = check_random_state(random_state)
         n_samples_comp = rng.multinomial(n_samples, weights)
 
         X = np.vstack([

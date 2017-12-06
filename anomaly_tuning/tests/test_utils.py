@@ -3,6 +3,8 @@
 
 import numpy as np
 
+from scipy.stats import multivariate_normal
+
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_almost_equal
 from sklearn.utils.testing import assert_array_equal
@@ -10,24 +12,25 @@ from sklearn.utils.testing import assert_array_almost_equal
 
 from anomaly_tuning.utils import GaussianMixture
 
+random_state = 5
+rng = np.random.RandomState(random_state)
+
+n_features = 2
+weight_1 = rng.rand(1)[0]
+weight_2 = 1 - weight_1
+mean_1 = rng.rand(n_features)
+mean_2 = (rng.rand(n_features) + 2)
+A_1 = rng.rand(n_features, n_features)
+cov_1 = np.dot(A_1.T, A_1) + np.identity(n_features)
+A_2 = rng.rand(n_features, n_features)
+cov_2 = np.dot(A_2.T, A_2) + 0.5 * np.identity(n_features)
+weights = np.array([weight_1, weight_2])
+means = np.array([mean_1, mean_2])
+covars = np.array([cov_1, cov_2])
+
 
 def test_sample():
     """Check sample from Gaussian Mixture."""
-    random_state = 5
-    rng = np.random.RandomState(random_state)
-
-    n_features = 2
-    weight_1 = rng.rand(1)[0]
-    weight_2 = 1 - weight_1
-    mean_1 = rng.rand(n_features)
-    mean_2 = (rng.rand(n_features) + 2)
-    A_1 = rng.rand(n_features, n_features)
-    cov_1 = np.dot(A_1.T, A_1) + np.identity(n_features)
-    A_2 = rng.rand(n_features, n_features)
-    cov_2 = np.dot(A_2.T, A_2) + 0.5 * np.identity(n_features)
-    weights = np.array([weight_1, weight_2])
-    means = np.array([mean_1, mean_2])
-    covars = np.array([cov_1, cov_2])
 
     gm = GaussianMixture(weights, means, covars, return_labels=True,
                          random_state=random_state)
@@ -53,3 +56,14 @@ def test_sample():
     n_samples = 20000
     X_s_2 = gm_2.sample(n_samples)
     assert_array_equal(X_s, X_s_2)
+
+
+def test_density():
+    """Check density from Gaussian Mixture."""
+
+    gm = GaussianMixture(weights, means, covars, random_state=random_state)
+    X = gm.sample(100)
+    gm_density = gm.density(X)
+    density = (weight_1 * multivariate_normal.pdf(X, mean_1, cov_1) +
+               weight_2 * multivariate_normal.pdf(X, mean_2, cov_2))
+    assert_array_almost_equal(gm_density, density)
