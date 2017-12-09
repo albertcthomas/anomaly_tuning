@@ -20,8 +20,40 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(levelname)s: %(message)s')
 
 
+def _compute_volumes(score_function, alphas, X_test, U, vol_tot_cube):
+    """Compute the volumes of each level set of the scoring function.
+
+    The scoring function is trained on X_train and the offsets associated to
+    each mass are computed using X_test.
+    """
+
+    score_U = score_function(U)
+    score_test = score_function(X_test)
+    min_test = np.min(score_test)
+    max_test = np.max(score_test)
+
+    vol_p = np.zeros(len(alphas))
+    offsets_p = np.zeros(len(alphas))
+
+    for a, alpha in enumerate(alphas):
+
+        def f(x):
+            return np.mean((score_test - x) >= 0) - alpha
+
+        b = bisect(f, min_test - 1e-12, max_test + 1e-12, xtol=1e-12,
+                   maxiter=1000, full_output=False)
+        b = b - 1e-12  # for robustness of the code
+
+        U_inliers = (score_U - b >= 0)
+
+        vol_p[a] = vol_tot_cube * np.mean(U_inliers)
+        offsets_p[a] = b
+
+    return vol_p, offsets_p
+
+
 def est_tuning(X_train, X_test, base_estimator, param_grid,
-               alphas, U, vol, vol_tot_cube):
+               alphas, U, vol_tot_cube):
     """Learn the best hyperparameters of base_estimator from the random
     splitting of the data set into X_train and X_test.
 
@@ -70,55 +102,27 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
         probabilities of the alphas array
 
     """
-
+    offsets_all = np.zeros((len(alphas), len(param_grid)))
     auc_est = np.zeros(len(param_grid))
 
     for p, param in enumerate(param_grid):
 
         clf = base_estimator(**param)
         clf = clf.fit(X_train)
-        clf_U = clf.score_samples(U)
-        clf_test = clf.score_samples(X_test)
-        min_test = np.min(clf_test)
-        max_test = np.max(clf_test)
-
-        for a, alpha in enumerate(alphas):
-
-            def f(x):
-                return np.mean((clf_test - x) >= 0) - alpha
-
-            b_0 = bisect(f, min_test - 1e-12, max_test + 1e-12, xtol=1e-12,
-                         maxiter=1000, full_output=False)
-            b_0 = b_0 - 1e-12  # for robustness of the code
-
-            U_inliers = (clf_U - b_0 >= 0)
-
-            vol[a, p] = vol_tot_cube * np.mean(U_inliers)
-
-        auc_est[p] = auc(alphas, vol[:, p])
+        score_function = clf.score_samples
+        vol_p, offsets_p = _compute_volumes(score_function, alphas,
+                                            X_test, U, vol_tot_cube)
+        auc_est[p] = auc(alphas, vol_p)
+        offsets_all[:, p] = offsets_p
 
     best_p = np.argmin(auc_est)
-
     best_param = param_grid[best_p]
 
-    # Retraining the model with the best parameters
+    # Retraining the model with the best parameters and recovering associated
+    # offsets
     clf_est = base_estimator(**best_param)
     clf_est.fit(X_train)
-
-    clf_test = clf_est.score_samples(X_test)
-    min_test = np.min(clf_test)
-    max_test = np.max(clf_test)
-
-    offsets_est = np.zeros(len(alphas))
-    for a, alpha in enumerate(alphas):
-        def f(x):
-            return np.mean((clf_test - x) >= 0) - alpha
-
-        b = bisect(f, min_test - 1e-12, max_test + 1e-12, xtol=1e-12,
-                   maxiter=1000, full_output=False)
-        b = b - 1e-12  # for robustness of the code
-
-        offsets_est[a] = b
+    offsets_est = offsets_all[:, best_p]
 
     return clf_est, offsets_est
 
@@ -211,8 +215,6 @@ def anomaly_tuning(X,
     for l in range(n_features):
         U[:, l] = rng.uniform(X_range[l, 0], X_range[l, 1], n_sim)
 
-    vol = np.zeros((len(alphas), len(param_grid)))
-
     res = Parallel(n_jobs=n_jobs, verbose=10)(
         delayed(est_tuning)(
             X[train], X[test],
@@ -220,7 +222,6 @@ def anomaly_tuning(X,
             param_grid,
             alphas,
             U,
-            vol,
             vol_tot_cube)
         for train, test in cv.split(X))
 
