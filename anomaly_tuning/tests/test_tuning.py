@@ -1,10 +1,13 @@
 import numpy as np
 
 from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import ParameterGrid
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import auc
 from sklearn.utils.testing import assert_array_almost_equal
 from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_array_equal
+from sklearn.utils.testing import assert_equal
 
 from anomaly_tuning.estimators import AverageKLPE
 from anomaly_tuning.estimators import MaxKLPE
@@ -30,13 +33,15 @@ X = rng.randn(50, n_features)
 n_estimator = 2
 cv = ShuffleSplit(n_splits=n_estimator, test_size=0.2, random_state=42)
 
+X_train, X_test = train_test_split(X, test_size=0.2, random_state=23)
+
 X_range = np.zeros((n_features, 2))
 X_range[:, 0] = np.min(X, axis=0)
 X_range[:, 1] = np.max(X, axis=0)
-
-# Hypercube sampling: sampling uniformly in X_range
-# Volume of the hypercube enclosing the data
+# volume of the hypercube enclosing the data
 vol_tot_cube = np.prod(X_range[:, 1] - X_range[:, 0])
+
+# hypercube sampling: sampling uniformly in X_range
 n_sim = 100
 U = np.zeros((n_sim, n_features))
 for l in range(n_features):
@@ -55,7 +60,7 @@ def test_compute_volumes_toy():
                          np.arange(0, 1, 0.01))
     grid = np.c_[xx.ravel(), yy.ravel()]
 
-    alphas = rng.randint(10, size=5) / 10
+    alphas = rng.randint(1, 100, size=5) / 100
     vol, offset = _compute_volumes(score_function_toy, alphas, grid, grid, 1.)
     assert_array_equal(alphas, vol)
 
@@ -68,7 +73,6 @@ def test_compute_volumes():
                   OCSVM(sigma=1.),
                   IsolationForest(n_estimators=10, random_state=2),
                   KernelSmoothing()]
-    X_train, X_test = train_test_split(X, test_size=0.2, random_state=23)
     alphas = rng.randint(1, 100, size=5) / 100
     alphas = np.sort(alphas)
 
@@ -81,7 +85,7 @@ def test_compute_volumes():
         score_function = clf.score_samples
         vols, offsets = _compute_volumes(score_function, alphas, X_test,
                                          U, vol_tot_cube)
-        # check increasing order of volumes and descreasing order of offset
+        # check increasing order of volumes and decreasing order of offsets
         assert_array_equal(vols, np.sort(vols))
         assert_array_equal(offsets, -np.sort(-offsets))
 
@@ -96,6 +100,37 @@ def test_compute_volumes():
             # assert_true(np.mean(clf_test >= offset) <= alpha)
 
         # TODO add test for alpha=0 and 1 when bisect is replaced by quantile
+
+
+def test_est_tuning():
+
+    for algo in algorithms:
+
+        name_algo = algo.name
+        parameters = algo_param[name_algo]
+        param_grid = ParameterGrid(parameters)
+        alphas = rng.randint(1, 100, size=5) / 100
+        alphas = np.sort(alphas)
+        clf_est, offsets_est = est_tuning(X_train, X_test, algo, param_grid,
+                                          alphas, U, vol_tot_cube)
+
+        # check that clf_est gives the minimum auc
+        score_function = clf_est.score_samples
+        vol_est, _ = _compute_volumes(score_function, alphas,
+                                      X_test, U, vol_tot_cube)
+        auc_est = auc(alphas, vol_est)
+
+        auc_algo = np.zeros(len(param_grid))
+        for p, param in enumerate(param_grid):
+            clf = algo(**param)
+            clf = clf.fit(X_train)
+            score_function_p = clf.score_samples
+            vol_p, _ = _compute_volumes(score_function_p, alphas,
+                                        X_test, U, vol_tot_cube)
+            auc_algo[p] = auc(alphas, vol_p)
+
+        assert_equal(np.min(auc_algo), auc_est)
+        # TODO test on offsets_est when quantile instead of bisect
 
 
 def test_anomaly_tuning():
