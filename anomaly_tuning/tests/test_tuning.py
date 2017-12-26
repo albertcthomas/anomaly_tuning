@@ -4,9 +4,9 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn.model_selection import ParameterGrid
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import auc
-from sklearn.utils.testing import assert_array_almost_equal
 from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_array_equal
+from sklearn.utils.testing import assert_array_almost_equal
 from sklearn.utils.testing import assert_equal
 
 from anomaly_tuning.estimators import AverageKLPE
@@ -43,6 +43,8 @@ vol_tot_cube = np.prod(X_range[:, 1] - X_range[:, 0])
 
 # hypercube sampling: sampling uniformly in X_range
 n_sim = 100
+# reseed generator to have same U in anomaly_tuning
+rng = np.random.RandomState(42)
 U = np.zeros((n_sim, n_features))
 for l in range(n_features):
     U[:, l] = rng.uniform(X_range[l, 0], X_range[l, 1], n_sim)
@@ -71,7 +73,7 @@ def test_compute_volumes():
     """Check _compute_volumes for several masses."""
     estimators = [AverageKLPE(k=3, novelty=True), MaxKLPE(k=3, novelty=True),
                   OCSVM(sigma=1.),
-                  IsolationForest(n_estimators=10, random_state=2),
+                  IsolationForest(n_estimators=5, random_state=2),
                   KernelSmoothing()]
     alphas = rng.randint(1, 100, size=5) / 100
     alphas = np.sort(alphas)
@@ -103,6 +105,7 @@ def test_compute_volumes():
 
 
 def test_est_tuning():
+    """Check that est_tuning returns the estimator with minimum auc."""
 
     for algo in algorithms:
 
@@ -134,24 +137,30 @@ def test_est_tuning():
 
 
 def test_anomaly_tuning():
+    """Check anomaly_tuning gives same results than est_tuning."""
 
-    expected_offsets = {'aklpe': np.array([[-0.27114216, -0.33649402],
-                                           [-0.60454928, -0.61773153]]),
-                        'mklpe': np.array([[-0.96130544, -1.17929608],
-                                           [-0.70046052, -0.71327533]]),
-                        'ocsvm': np.array([[0.05338662, -0.03524815],
-                                           [0.20192307, -0.23859429]]),
-                        'iforest': np.array([[0.01947895, 0.00902796],
-                                             [0.03771182, -0.00537859]]),
-                        'ks': np.array([[-3.07824835, -3.19763788],
-                                        [-3.08133308, -3.18917259]])
-                        }
+    parameters = {'k': np.arange(1, 10), 'novelty': [True]}
+    alphas = np.array([0.2, 0.5, 0.9])
+    models, offsets = anomaly_tuning(X, AverageKLPE, alphas=alphas,
+                                     parameters=parameters,
+                                     cv=cv, n_sim=100)
+    score_estimators = np.empty((n_estimator, len(X)))
+    for i in range(n_estimator):
+        score_estimators[i, :] = models[i].score_samples(X)
 
-    for algo in algorithms:
-        name_algo = algo.name
-        parameters = algo_param[name_algo]
-        _, offsets = anomaly_tuning(X, base_estimator=algo,
-                                    alphas=np.arange(0.7, 0.8, 0.1),
-                                    parameters=parameters,
-                                    random_state=42, cv=cv)
-        assert_array_almost_equal(expected_offsets[name_algo], offsets)
+    score_estimators_seq = np.empty((n_estimator, len(X)))
+    offsets_seq = np.empty((n_estimator, len(alphas)))
+    param_grid = ParameterGrid(parameters)
+    i = 0
+    for train, test in cv.split(X):
+        X_train = X[train]
+        X_test = X[test]
+
+        model, offset = est_tuning(X_train, X_test, AverageKLPE,
+                                   param_grid, alphas, U, vol_tot_cube)
+        score_estimators_seq[i, :] = model.score_samples(X)
+        offsets_seq[i, :] = offset
+        i += 1
+
+    assert_array_almost_equal(score_estimators, score_estimators_seq)
+    assert_array_almost_equal(offsets, offsets_seq)
