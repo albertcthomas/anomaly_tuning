@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/albertcthomas/anomaly_tuning.svg?branch=master)](https://travis-ci.org/albertcthomas/anomaly_tuning)
+
 # Learning hyperparameters for unsupervised anomaly detection
 
 This repository contains the Python code to learn hyperparameters of unsupervised anomaly detection algorithms as described in the paper ["Learning hyperparameters for unsupervised anomaly detection", A. Thomas, S. Clémençon, V. Feuillard, A. Gramfort, Anomaly Detection Workshop, ICML 2016.](https://drive.google.com/file/d/0B8Dg3PBX90KNUTg5NGNOVnFPX0hDNmJsSTcybzZMSHNPYkd3/view)
