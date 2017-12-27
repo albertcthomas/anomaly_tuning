@@ -14,7 +14,7 @@ Description of the files:
 
 * estimators.py : anomaly detection estimators used in the paper.
 * tuning.py : hyperparameters selection algorithm described in the paper.
-* examples.py : example of the algorithm on a two dimensional Gaussian mixture data set.
+* demo_anomaly_tuning.py : example of the algorithm on a two dimensional Gaussian mixture data set.
 * utils.py : Gaussian mixture object used to sample from a Gaussian mixture model and compute the density of the model.
 
 We are actively trying to reduce the number of dependencies. However, as of
