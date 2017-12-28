@@ -20,7 +20,7 @@ Description of the files:
 We are actively trying to reduce the number of dependencies. However, as of
 now these are the dependencies for the examples to run:
 
-* numpy (>=1.8)
+* numpy (>=1.9)
 * matplotlib (>=1.3)
 * scipy (>=0.16)
 * scikit-learn (0.18)
