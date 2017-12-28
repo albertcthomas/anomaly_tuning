@@ -6,8 +6,6 @@ import logging
 
 import numpy as np
 
-from scipy.stats.mstats import mquantiles
-
 from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import auc
 from sklearn.utils import check_random_state
@@ -31,7 +29,7 @@ def _compute_volumes(score_function, alphas, X_test, U, vol_tot_cube):
     score_test = score_function(X_test)
 
     # compute offsets
-    offsets_p = mquantiles(score_test, 1 - alphas)
+    offsets_p = np.percentile(score_test, 100 * (1 - alphas))
     # compute volumes of associated level sets
     vol_p = (np.array([np.mean(score_U >= offset) for offset in offsets_p]) *
              vol_tot_cube)

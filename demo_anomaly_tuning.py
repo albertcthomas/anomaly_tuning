@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-from scipy.stats.mstats import mquantiles
-
 from sklearn.model_selection import ShuffleSplit
 
 from anomaly_tuning.estimators import (AverageKLPE, MaxKLPE, OCSVM,
@@ -45,7 +43,7 @@ alpha_set = 0.95
 n_quantile = 1000000
 Xq = gm.sample(n_quantile)
 density_q = gm.density(Xq)
-tau = mquantiles(density_q, 1 - alpha_set)
+tau = np.percentile(density_q, 100 * (1 - alpha_set))
 
 # Plot grid
 X_range = np.zeros((n_features, 2))
@@ -95,7 +93,7 @@ for algo in algorithms:
         Z += 1. / n_estimator * (clf.score_samples(grid))
         Z_data += 1. / n_estimator * (clf.score_samples(X))
 
-    off_data = mquantiles(Z_data, 1 - alpha_set)
+    off_data = np.percentile(Z_data, 100 * (1 - alpha_set))
 
     X_outliers = X[Z_data - off_data < 0, :]
 
@@ -103,10 +101,10 @@ for algo in algorithms:
     plt.figure()
     plt.title(name_algo)
     plt.contourf(xx, yy, Z, cmap=plt.cm.Blues_r)
-    c_0 = plt.contour(xx, yy, Z, levels=off_data, linewidths=2,
+    c_0 = plt.contour(xx, yy, Z, levels=[off_data], linewidths=2,
                       colors='green')
-    plt.clabel(c_0, inline=1, fontsize=15, fmt={off_data[0]: str(alpha_set)})
-    plt.contour(xx, yy, Z_true, levels=tau, linewidths=2, colors='red')
+    plt.clabel(c_0, inline=1, fontsize=15, fmt={off_data: str(alpha_set)})
+    plt.contour(xx, yy, Z_true, levels=[tau], linewidths=2, colors='red')
     plt.axis('tight')
     plt.scatter(X[:, 0], X[:, 1], s=4., color='black')
     plt.scatter(X_outliers[:, 0], X_outliers[:, 1], s=4., color='red')
