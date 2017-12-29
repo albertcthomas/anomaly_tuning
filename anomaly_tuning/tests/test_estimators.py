@@ -3,6 +3,7 @@ import numpy as np
 from sklearn import ensemble
 from sklearn.svm import OneClassSVM
 from sklearn.utils.testing import assert_equal
+from sklearn.utils.testing import assert_almost_equal
 from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_array_almost_equal
 from sklearn.utils.testing import assert_greater_equal
@@ -104,9 +105,8 @@ def test_maxklpe():
     assert_array_almost_equal(score_train_attr1, score_train_true)
     score_train1 = clf1.score_samples(X_train)
     assert_array_almost_equal(score_train1, score_train_true)
-
-    assert_greater_equal(clf1.contamination,
-                         np.mean(score_train_attr1 < clf1.threshold_))
+    assert_array_equal((score_train1 >= clf1.threshold_).astype(int),
+                       clf1.predict(X_train))
 
     assert_array_equal(pred_train_true, clf1.predict(X_train))
 
@@ -121,6 +121,23 @@ def test_maxklpe():
     assert_array_almost_equal(score_test2, score_test_true)
 
     assert_array_equal(pred_test_true, clf2.predict(X_test))
+
+
+def test_klpe_contamination():
+    """Check that predict agrees with contamination parameter. """
+
+    # This requires a certain amount of data samples because the threshold is
+    # defined by a quantile.
+    X = np.random.randn(50, 2)
+    contamination = 0.1
+
+    clf1 = AverageKLPE(k=5, contamination=contamination)
+    clf1.fit(X)
+    assert_almost_equal(np.mean(clf1.predict(X) == 1), 1 - contamination)
+
+    clf2 = MaxKLPE(k=5, contamination=contamination)
+    clf2.fit(X)
+    assert_almost_equal(np.mean(clf2.predict(X) == 1), 1 - contamination)
 
 
 def test_score_train_novelty_or_not():

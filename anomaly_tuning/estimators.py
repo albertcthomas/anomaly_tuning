@@ -91,7 +91,8 @@ class KLPE(BaseEstimator):
         elif algo == 'average':
             self.scores_fit_ = - np.mean(dist_fit, axis=1)
 
-        self.threshold_ = np.percentile(self.scores_fit_, self.contamination)
+        self.threshold_ = np.percentile(self.scores_fit_,
+                                        100 * self.contamination)
 
         return self
 
