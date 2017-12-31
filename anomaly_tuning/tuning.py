@@ -19,10 +19,10 @@ logging.basicConfig(level=logging.DEBUG,
 
 
 def _compute_volumes(score_function, alphas, X_test, U, vol_tot_cube):
-    """Compute the volumes of each level set of the scoring function.
+    """Compute the volumes of each level set of the scoring function
 
-    The scoring function is trained on X_train and the offsets associated to
-    each mass are computed using X_test.
+    Each level set is associated to a mass of alphas. The function returns the
+    volume and the offset of each level set.
     """
 
     score_U = score_function(U)
