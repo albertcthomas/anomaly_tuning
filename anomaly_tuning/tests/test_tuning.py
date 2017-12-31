@@ -29,13 +29,13 @@ algo_param = {'aklpe': {'k': np.arange(1, 10, 2), 'novelty': [True]},
               'ks': {'bandwidth': np.linspace(0.01, 5., 5)},
               }
 
-rng = np.random.RandomState(42)
+rng = np.random.RandomState(39)
 n_features = 2
-X = rng.randn(50, n_features)
+X = rng.randn(500, n_features)
 n_estimator = 2
-cv = ShuffleSplit(n_splits=n_estimator, test_size=0.2, random_state=42)
+cv = ShuffleSplit(n_splits=n_estimator, test_size=0.5, random_state=42)
 
-X_train, X_test = train_test_split(X, test_size=0.2, random_state=23)
+X_train, X_test = train_test_split(X, test_size=0.5, random_state=23)
 
 X_range = np.zeros((n_features, 2))
 X_range[:, 0] = np.min(X, axis=0)
@@ -65,10 +65,13 @@ def test_compute_volumes_toy():
     grid = np.c_[xx.ravel(), yy.ravel()]
 
     alphas = rng.randint(1, 100, size=5) / 100
-    vol, offset = _compute_volumes(score_function_toy, alphas, grid, grid, 1.)
-    assert_array_equal(alphas, vol)
-
-    # TODO add test for offset when bisect is replaced by quantile
+    vols, offsets = _compute_volumes(score_function_toy, alphas,
+                                     grid, grid, 1.)
+    # check values of volume
+    assert_array_equal(alphas, vols)
+    # check values of offsets
+    pred_offsets = (score_function_toy(grid) >= offsets[:, np.newaxis])
+    assert_array_equal(np.mean(pred_offsets, axis=1), alphas)
 
 
 def test_compute_volumes():
@@ -97,13 +100,16 @@ def test_compute_volumes():
         assert_true(np.all(0 <= vols) and np.all(vols <= vol_tot_cube))
 
         # check offset values
-        for alpha, offset in zip(alphas, offsets):
-            # TODO remove 1e-12 when quantile
-            assert_true(min_test - 2e-12 <= offset <= max_test + 1e-12)
-            # TODO when quantile
-            # assert_true(np.mean(clf_test >= offset) <= alpha)
+        assert_true(np.all(min_test <= offsets) and
+                    np.all(offsets <= max_test))
 
-        # TODO add test for alpha=0 and 1 when bisect is replaced by quantile
+        proba_offsets_pos = (clf_test >= offsets[:, np.newaxis])
+        # this test requires to have a large number of samples because
+        # np.percentile is an empirical quantile which uses interpolation.
+        # this is also why we ask the values to be equal only up to the
+        # second decimal.
+        assert_array_almost_equal(np.mean(proba_offsets_pos, axis=1), alphas,
+                                  decimal=2)
 
 
 def test_est_tuning():
@@ -135,7 +141,15 @@ def test_est_tuning():
             auc_algo[p] = auc(alphas, vol_p)
 
         assert_equal(np.min(auc_algo), auc_est)
-        # TODO test on offsets_est when quantile instead of bisect
+
+        clf_test = clf_est.score_samples(X_test)
+        proba_offsets_est = (clf_test >= offsets_est[:, np.newaxis])
+        # this test requires to have a large number of samples because
+        # np.percentile is an empirical quantile which uses interpolation.
+        # this is also why we ask the values to be equal only up to the
+        # second decimal.
+        assert_array_almost_equal(np.mean(proba_offsets_est, axis=1), alphas,
+                                  decimal=2)
 
 
 def test_anomaly_tuning():
