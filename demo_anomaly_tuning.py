@@ -62,22 +62,23 @@ Z_true = Z_true.reshape(xx.shape)
 
 
 algorithms = [AverageKLPE, MaxKLPE, OCSVM, IsolationForest, KernelSmoothing]
-algo_param = {'aklpe': {'k': np.arange(1, min(50, int(0.8 * n_samples)), 2),
-                        'novelty': [True]},
-              'mklpe': {'k': np.arange(1, min(50, int(0.8 * n_samples)), 2),
-                        'novelty': [True]},
-              'ocsvm': {'sigma': np.linspace(0.01, 5., 50)},
-              'iforest': {'max_samples': np.linspace(0.1, 1., 10)},
-              'ks': {'bandwidth': np.linspace(0.01, 5., 50)},
-              }
+algo_param = {
+    'AverageKLPE': {'k': np.arange(1, min(50, int(0.8 * n_samples)), 2),
+                    'novelty': [True]},
+    'MaxKLPE': {'k': np.arange(1, min(50, int(0.8 * n_samples)), 2),
+                'novelty': [True]},
+    'OCSVM': {'sigma': np.linspace(0.01, 5., 10)},
+    'IsolationForest': {'max_samples': np.linspace(0.1, 1., 10)},
+    'KernelSmoothing': {'bandwidth': np.linspace(0.01, 5., 10)},
+}
 
 # Tuning step
-n_estimator = 10
-cv = ShuffleSplit(n_splits=n_estimator, test_size=0.2, random_state=42)
+n_estimators = 10
+cv = ShuffleSplit(n_splits=n_estimators, test_size=0.2, random_state=42)
 
 for algo in algorithms:
 
-    name_algo = algo.name
+    name_algo = algo.__name__
     print('--------------', name_algo, ' -------------')
     parameters = algo_param[name_algo]
 
@@ -88,10 +89,10 @@ for algo in algorithms:
 
     Z = np.zeros((np.shape(grid)[0],))
     Z_data = np.zeros((n_samples,))
-    for n_est in range(n_estimator):
+    for n_est in range(n_estimators):
         clf = models[n_est]
-        Z += 1. / n_estimator * (clf.score_samples(grid))
-        Z_data += 1. / n_estimator * (clf.score_samples(X))
+        Z += 1. / n_estimators * (clf.score_samples(grid))
+        Z_data += 1. / n_estimators * (clf.score_samples(X))
 
     off_data = np.percentile(Z_data, 100 * (1 - alpha_set))
 

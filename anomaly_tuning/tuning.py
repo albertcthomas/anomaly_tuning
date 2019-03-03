@@ -2,7 +2,7 @@
 #          Alexandre Gramfort
 # License: BSD (3-clause)
 
-import logging
+import warnings
 
 import numpy as np
 
@@ -12,10 +12,6 @@ from sklearn.utils import check_random_state
 from sklearn.externals.joblib import Parallel, delayed
 
 from .estimators import AverageKLPE
-
-# Logging configuration
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(levelname)s: %(message)s')
 
 
 def _compute_volumes(score_function, alphas, X_test, U, vol_tot_cube):
@@ -179,10 +175,9 @@ def anomaly_tuning(X,
 
     n_samples, n_features = X.shape
     if n_features >= 5:
-        logging.warning(
-            'Dimension might be too high for volume estimation '
-            'and thus deteriorate model selection.',
-        )
+        warn_msg = ('n_features (%s) might be too high for volume estimation '
+                    'and thus deteriorates model selection.' % (n_features))
+        warnings.warn(warn_msg, UserWarning)
 
     param_grid = ParameterGrid(parameters)
 

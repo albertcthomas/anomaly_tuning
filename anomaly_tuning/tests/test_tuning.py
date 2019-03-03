@@ -1,5 +1,3 @@
-from __future__ import division
-
 import numpy as np
 
 from sklearn.model_selection import ShuffleSplit
@@ -21,12 +19,12 @@ from anomaly_tuning.tuning import est_tuning
 from anomaly_tuning.tuning import anomaly_tuning
 
 algorithms = [AverageKLPE, MaxKLPE, OCSVM, IsolationForest, KernelSmoothing]
-algo_param = {'aklpe': {'k': np.arange(1, 10, 2), 'novelty': [True]},
-              'mklpe': {'k': np.arange(1, 10, 2), 'novelty': [True]},
-              'ocsvm': {'sigma': np.linspace(0.01, 5., 5)},
-              'iforest': {'max_samples': np.linspace(0.1, 1., 5),
-                          'random_state': [42]},
-              'ks': {'bandwidth': np.linspace(0.01, 5., 5)},
+algo_param = {'AverageKLPE': {'k': np.arange(1, 10, 2), 'novelty': [True]},
+              'MaxKLPE': {'k': np.arange(1, 10, 2), 'novelty': [True]},
+              'OCSVM': {'sigma': np.linspace(0.01, 5., 5)},
+              'IsolationForest': {'max_samples': np.linspace(0.1, 1., 5),
+                                  'random_state': [42]},
+              'KernelSmoothing': {'bandwidth': np.linspace(0.01, 5., 5)},
               }
 
 rng = np.random.RandomState(39)
@@ -117,8 +115,7 @@ def test_est_tuning():
 
     for algo in algorithms:
 
-        name_algo = algo.name
-        parameters = algo_param[name_algo]
+        parameters = algo_param[algo.__name__]
         param_grid = ParameterGrid(parameters)
         alphas = rng.randint(1, 100, size=5) / 100
         alphas = np.sort(alphas)

@@ -178,8 +178,6 @@ class AverageKLPE(KLPE):
         Should be in (0, 1).
     """
 
-    name = 'aklpe'
-
     def __init__(self, k=6, novelty=False, contamination=0.05):
 
         super(AverageKLPE, self).__init__(k=k, algo='average', novelty=novelty,
@@ -209,8 +207,6 @@ class MaxKLPE(KLPE):
         Should be in (0, 1).
     """
 
-    name = 'mklpe'
-
     def __init__(self, k=6, novelty=False, contamination=0.05):
 
         super(MaxKLPE, self).__init__(k=k, algo='max', novelty=novelty,
@@ -231,52 +227,34 @@ class OCSVM(OneClassSVM):
         nu parameter of the OneClassSVM algorithm. Should be in (0, 1].
     """
 
-    name = 'ocsvm'
-
     def __init__(self, sigma=1.0, nu=0.4):
         gamma = 1. / (2. * sigma ** 2)
         super(OCSVM, self).__init__(gamma=gamma, nu=nu)
-
-    def score_samples(self, X):
-        """Scoring function of the estimator.
-
-        Parameters
-        ----------
-        X : array, shape (n_samples, n_features)
-            Input data set.
-
-        Returns
-        -------
-        score : array, shape (n_samples,)
-            Returns scores of the samples.
-        """
-
-        return self.decision_function(X).ravel()
 
 
 class IsolationForest(ensemble.IsolationForest):
     """Anomaly detection estimator based on Isolation Forest."""
 
-    name = 'iforest'
-
-    def score_samples(self, X):
-        """ Scoring function of the estimator.
-
-        Parameters
-        ----------
-        X : array, shape (n_samples, n_features)
-            Input data set.
-
-        Returns
-        -------
-        score : array, shape (n_samples,)
-            Returns scores of the samples.
-        """
-
-        return self.decision_function(X)
+    def __init__(self,
+                 n_estimators=100,
+                 max_samples="auto",
+                 contamination="auto",
+                 max_features=1.,
+                 bootstrap=False,
+                 n_jobs=None,
+                 random_state=None,
+                 verbose=0):
+        super().__init__(
+            n_estimators=n_estimators,
+            max_samples=max_samples,
+            contamination=contamination,
+            max_features=max_features,
+            bootstrap=bootstrap,
+            n_jobs=n_jobs,
+            random_state=random_state,
+            behaviour="new",
+            verbose=verbose)
 
 
 class KernelSmoothing(KernelDensity):
     """Anomaly detection estimator based on plug-in approach."""
-
-    name = 'ks'

@@ -1,48 +1,13 @@
 import numpy as np
 
-from sklearn import ensemble
-from sklearn.svm import OneClassSVM
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_almost_equal
 from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_array_almost_equal
 from sklearn.utils.testing import assert_greater_equal
 
-from anomaly_tuning.estimators import OCSVM
 from anomaly_tuning.estimators import AverageKLPE
 from anomaly_tuning.estimators import MaxKLPE
-from anomaly_tuning.estimators import IsolationForest
-
-
-def test_score_samples_estimators():
-    """Check the values of score_samples methods derived from sklearn.
-
-    Check that the values are the same than sklearn decision_function methods.
-    This only concerns OCSVM and IsolationForest.
-    """
-
-    X = np.random.randn(50, 2)
-
-    clf1 = IsolationForest(random_state=88)
-    clf1.fit(X)
-
-    clf2 = ensemble.IsolationForest(random_state=88)
-    clf2.fit(X)
-
-    assert_array_equal(clf1.score_samples(X), clf2.decision_function(X))
-
-    nu = 0.4
-    sigma = 3.0
-    gamma = gamma = 1. / (2. * sigma ** 2)
-    clf1 = OCSVM(sigma=sigma, nu=nu)
-    clf1.fit(X)
-
-    clf2 = OneClassSVM(gamma=gamma, nu=nu)
-    clf2.fit(X)
-
-    assert_array_equal(clf1.score_samples(X),
-                       clf2.decision_function(X).ravel())
-
 
 # Toy data sets for KLPE tests
 X_train = np.array([[0, 0], [1, 1], [3, 1]])
