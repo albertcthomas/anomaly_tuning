@@ -4,7 +4,7 @@ language: python
 matrix:
   include:
     - python: 3.7
-      env: NUMPY=1.11 SCIPY=0.17 SCIKIT-LEARN=0.20.2 MATPLOTLIB=3
+      env: NUMPY=1.16 SCIPY=1.2 SKLEARN=0.20.2 MATPLOTLIB=3
 
 before_install:
   - wget -q http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -16,8 +16,8 @@ before_install:
 install:
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
   - source activate testenv
-  - conda install --yes --quiet numpy=$NUMPY scipy=$SCIPY scikit-learn=$SCIKIT-LEARN matplotlib=$MATPLOTLIB
-  - conda install --yes --quiet joblib pytest coverage flake8
+  - conda install --yes --quiet numpy=$NUMPY scipy=$SCIPY scikit-learn=$SKLEARN matplotlib=$MATPLOTLIB
+  - conda install --yes --quiet joblib pytest pytest-cov coverage flake8
   - pip install .
 
 script:

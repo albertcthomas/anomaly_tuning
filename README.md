@@ -20,9 +20,9 @@ Description of the files:
 We are actively trying to reduce the number of dependencies. However, as of
 now these are the dependencies for the examples to run:
 
-* numpy (>=1.11)
+* numpy (>=1.16)
 * matplotlib (>=3)
-* scipy (>=0.17)
+* scipy (>=1.2)
 * scikit-learn (0.20.2)
 
 Code should run on python 3.7 or higher.
