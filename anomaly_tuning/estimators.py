@@ -58,8 +58,6 @@ class KLPE(BaseEstimator):
         2012 IEEE. 2012.
     """
 
-    name = 'klpe'
-
     def __init__(self, k=6, algo='average', novelty=False, contamination=0.05):
 
         self.k = k
