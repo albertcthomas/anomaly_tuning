@@ -1,17 +1,24 @@
 language: python
+
+matrix:
+  include:
+    - python: 3.7
+      env: NUMPY=1.11 SCIPY=0.17 SCIKIT-LEARN=0.20.2 MATPLOTLIB=3
+
 before_install:
   - wget -q http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p /home/travis/miniconda
   - export PATH=/home/travis/miniconda/bin:$PATH
   - conda update --yes --quiet conda
+
 install:
-    - conda create -n testenv --yes pip python=2.7
-    - source activate testenv
-    - conda install --yes --quiet numpy=1.11 scipy=0.17 scikit-learn=0.18 matplotlib=1.5
-    - conda install --yes --quiet joblib nose coverage flake8
-    - pip install coverage coveralls
-    - python setup.py install
+  - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
+  - source activate testenv
+  - conda install --yes --quiet numpy=$NUMPY scipy=$SCIPY scikit-learn=$SCIKIT-LEARN matplotlib=$MATPLOTLIB
+  - conda install --yes --quiet joblib pytest coverage flake8
+  - pip install .
+
 script:
-    - nosetests . --with-coverage
-    - flake8 --count anomaly_tuning
+  - pytest --cov .
+  - flake8 --count anomaly_tuning

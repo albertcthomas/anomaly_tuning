@@ -1,0 +1,5 @@
+[run]
+source = anomaly_tuning
+omit =
+    setup.py
+    demo_anomaly_tuning.py

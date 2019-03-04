@@ -6,7 +6,7 @@ This repository contains the Python code to learn hyperparameters of unsupervise
 
 To install the package, run:
 
-	python setup.py install --user
+	pip install .
 
 A demo is presented in the notebook: [demo_anomaly_tuning.ipynb](https://github.com/albertcthomas/anomaly_tuning/blob/master/demo_anomaly_tuning.ipynb)
 
@@ -20,9 +20,9 @@ Description of the files:
 We are actively trying to reduce the number of dependencies. However, as of
 now these are the dependencies for the examples to run:
 
-* numpy (>=1.9)
-* matplotlib (>=1.3)
-* scipy (>=0.16)
-* scikit-learn (0.18)
+* numpy (>=1.11)
+* matplotlib (>=3)
+* scipy (>=0.17)
+* scikit-learn (0.20.2)
 
-Code should run on both Python 2.7 and Python 3.4 or higher.
+Code should run on python 3.7 or higher.
