@@ -24,5 +24,6 @@ now these are the dependencies for the examples to run:
 * matplotlib (>=3)
 * scipy (>=1.2)
 * scikit-learn (0.20.2)
+* joblib (0.13.2)
 
 Code should run on python 3.7 or higher.

@@ -193,7 +193,7 @@ def anomaly_tuning(X,
     for l in range(n_features):
         U[:, l] = rng.uniform(X_range[l, 0], X_range[l, 1], n_sim)
 
-    res = Parallel(n_jobs=n_jobs, verbose=10)(
+    res = Parallel(n_jobs=n_jobs, verbose=1)(
         delayed(est_tuning)(
             X[train], X[test],
             base_estimator,
