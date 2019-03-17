@@ -1,6 +1,3 @@
-# The tests for the GaussianMixture object are inspired from the tests of
-# the GaussianMixture estimator implemented in scikit-learn.
-
 import numpy as np
 
 from scipy.stats import multivariate_normal
@@ -10,7 +7,9 @@ from sklearn.utils.testing import assert_almost_equal
 from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_array_almost_equal
 
+from anomaly_tuning.estimators import OCSVM
 from anomaly_tuning.utils import GaussianMixture
+from anomaly_tuning.utils import compute_ensemble_score_samples
 
 random_state = 5
 rng = np.random.RandomState(random_state)
@@ -28,6 +27,36 @@ weights = np.array([weight_1, weight_2])
 means = np.array([mean_1, mean_2])
 covars = np.array([cov_1, cov_2])
 
+
+def test_compute_ensemble_score_samples():
+    """Check the parallel computation"""
+
+    models = []
+    X_train_1 = rng.randn(10, 2)
+    X_train_2 = rng.randn(10, 2)
+    X_test = rng.randn(10, 2)
+
+    clf = OCSVM()
+    for X_train in [X_train_1, X_train_2]:
+        clf.fit(X_train)
+        models.append(clf)
+
+    n_estimators = len(models)
+
+    # ensemble score by hand
+    score_test_1 = np.zeros(len(X_test))
+    for n_est in range(n_estimators):
+        est = models[n_est]
+        score_test_1 += 1. / n_estimators * est.score_samples(X_test)
+
+    # ensemble score compute by function
+    score_test_2 = compute_ensemble_score_samples(models, X_test)
+
+    assert_array_equal(score_test_1, score_test_2)
+
+
+# The tests for the GaussianMixture object are inspired from the tests of
+# the GaussianMixture estimator implemented in scikit-learn.
 
 def test_sample():
     """Check sample from Gaussian Mixture."""

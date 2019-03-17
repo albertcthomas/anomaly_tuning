@@ -2,18 +2,60 @@
 #          Alexandre Gramfort
 # License: BSD (3-clause)
 
-# Gaussian Mixture class inspired from scikit-learn GaussianMixture module to
-# sample and compute density of a Gaussian mixture model.
-
 import numpy as np
 
 from scipy.stats import multivariate_normal
 
 from sklearn.utils import check_random_state
 
+from joblib import Parallel, delayed
+
+
+def _parallel_score_samples(estimator, X):
+    """Compute score_samples of a fitted estimator on X.
+
+    This function is used to parallelize the computation of the scores of an
+    ensemble.
+    """
+    return estimator.score_samples(X)
+
+
+def compute_ensemble_score_samples(models, X, n_jobs=1):
+    """Compue the score of each sample obtained with the ensemble
+
+    Parameters
+    ----------
+    models : list, shape (n_estimator)
+        Ensemble of anomaly detection estimators, each of them instantiated
+        with the best hyperparameters learnt from their corresponding random
+        split and fitted on X_train.
+    X : array, shape (n_samples, n_features)
+        Data set.
+    n_jobs : integer, optional (default=1)
+        The number of jobs to run in parallel to compute the scores
+        If -1, then the number of jobs is set to the number of cores.
+
+    Returns
+    -------
+    score : array, shape (n_samples,)
+        Scores of the samples.
+    """
+    n_estimators = len(models)
+
+    y_scores = Parallel(n_jobs=n_jobs, verbose=1)(
+        delayed(_parallel_score_samples)(models[n_est], X)
+        for n_est in range(n_estimators))
+
+    score = np.mean(y_scores, axis=0)
+
+    return score
+
 
 class GaussianMixture(object):
     """Gaussian mixture.
+
+    This class is inspired from scikit-learn GaussianMixture module to
+    sample from and compute the density of a Gaussian mixture model.
 
     Parameters
     ----------
