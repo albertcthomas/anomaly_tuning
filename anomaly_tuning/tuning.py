@@ -115,6 +115,7 @@ def anomaly_tuning(X,
                    alphas=np.arange(0.05, 1., 0.05),
                    random_state=42,
                    n_jobs=1,
+                   verbose=0,
                    ):
     """The data set X is randomly split into a training set X_train and a test
     set X_test. Given an anomaly detection algorithm, a scoring function is
@@ -157,9 +158,12 @@ def anomaly_tuning(X,
         If None, the random number generator is the RandomState instance used
         by `np.random`.
 
-    n_jobs : integer, optional (default=1)
+    n_jobs : int, optional (default=1)
         The number of jobs to run in parallel for cross validation.
         If -1, then the number of jobs is set to the number of cores.
+
+    verbose : int, optional (default=0)
+        Controls the verbosity when fitting the estimator for each cv split.
 
     Returns
     -------
@@ -194,7 +198,7 @@ def anomaly_tuning(X,
     for l in range(n_features):
         U[:, l] = rng.uniform(X_range[l, 0], X_range[l, 1], n_sim)
 
-    res = Parallel(n_jobs=n_jobs, verbose=1)(
+    res = Parallel(n_jobs=n_jobs, verbose=verbose)(
         delayed(est_tuning)(
             X[train], X[test],
             base_estimator,

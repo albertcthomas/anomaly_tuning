@@ -20,7 +20,7 @@ def _parallel_score_samples(estimator, X):
     return estimator.score_samples(X)
 
 
-def compute_ensemble_score_samples(models, X, n_jobs=1):
+def compute_ensemble_score_samples(models, X, n_jobs=1, verbose=0):
     """Compue the score of each sample obtained with the ensemble
 
     Parameters
@@ -29,11 +29,17 @@ def compute_ensemble_score_samples(models, X, n_jobs=1):
         Ensemble of anomaly detection estimators, each of them instantiated
         with the best hyperparameters learnt from their corresponding random
         split and fitted on X_train.
+
     X : array, shape (n_samples, n_features)
         Data set.
+
     n_jobs : integer, optional (default=1)
         The number of jobs to run in parallel to compute the scores
         If -1, then the number of jobs is set to the number of cores.
+
+    verbose : int, optional (default=0)
+        Controls the verbosity when computing the prediction for all estimators
+        of the ensemble.
 
     Returns
     -------
@@ -42,7 +48,7 @@ def compute_ensemble_score_samples(models, X, n_jobs=1):
     """
     n_estimators = len(models)
 
-    y_scores = Parallel(n_jobs=n_jobs, verbose=1)(
+    y_scores = Parallel(n_jobs=n_jobs, verbose=verbose)(
         delayed(_parallel_score_samples)(models[n_est], X)
         for n_est in range(n_estimators))
 
