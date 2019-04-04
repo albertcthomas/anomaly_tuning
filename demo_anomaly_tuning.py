@@ -12,6 +12,7 @@ from anomaly_tuning.estimators import (AverageKLPE, MaxKLPE, OCSVM,
                                        KernelSmoothing, IsolationForest)
 from anomaly_tuning import anomaly_tuning
 from anomaly_tuning.utils import GaussianMixture
+from anomaly_tuning.utils import compute_ensemble_score_samples
 
 # Matplotlib configuration
 font = {'weight': 'normal',
@@ -87,12 +88,8 @@ for algo in algorithms:
                                random_state=42,
                                cv=cv, n_jobs=N_JOBS)
 
-    Z = np.zeros((np.shape(grid)[0],))
-    Z_data = np.zeros((n_samples,))
-    for n_est in range(n_estimators):
-        clf = models[n_est]
-        Z += 1. / n_estimators * (clf.score_samples(grid))
-        Z_data += 1. / n_estimators * (clf.score_samples(X))
+    Z = compute_ensemble_score_samples(models, grid, n_jobs=N_JOBS)
+    Z_data = compute_ensemble_score_samples(models, X, n_jobs=N_JOBS)
 
     off_data = np.percentile(Z_data, 100 * (1 - alpha_set))
 
