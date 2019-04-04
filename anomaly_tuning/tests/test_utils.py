@@ -49,7 +49,7 @@ def test_compute_ensemble_score_samples():
         est = models[n_est]
         score_test_1 += 1. / n_estimators * est.score_samples(X_test)
 
-    # ensemble score compute by function
+    # ensemble score computed with function
     score_test_2 = compute_ensemble_score_samples(models, X_test)
 
     assert_array_equal(score_test_1, score_test_2)

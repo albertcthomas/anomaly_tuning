@@ -2,7 +2,7 @@ import numpy as np
 
 from anomaly_tuning.tree import RegressionTree
 
-# creating a simple tree so that we know the exact volumes of the leafs
+# create a simple tree so that we know the exact volumes of the leafs
 TREE_LEAF = -1
 INTERNAL = -1  # we just need the leaf values for this test
 node_count = 9
@@ -26,7 +26,7 @@ X_range = np.array([[0, 1], [0, 1]])
 
 
 class SimpleTree:
-    """Simple class tree for the sake of testing.
+    """Simple tree class for the sake of testing.
 
     The only attributes are the ones needed for the tests.
     """
