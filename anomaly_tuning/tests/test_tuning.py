@@ -62,8 +62,8 @@ def test_compute_volumes_toy():
     grid = np.c_[xx.ravel(), yy.ravel()]
 
     alphas = rng.randint(1, 100, size=5) / 100
-    vols, offsets = _compute_volumes(score_function_toy, alphas,
-                                     grid, grid, 1.)
+    vols, offsets = _compute_volumes(score_function_toy, alphas, None, grid,
+                                     'monte-carlo', grid, 1.)
     # check values of volume
     assert_array_equal(alphas, vols)
     # check values of offsets
@@ -87,7 +87,8 @@ def test_compute_volumes():
         max_test = np.max(clf_test)
 
         score_function = clf.score_samples
-        vols, offsets = _compute_volumes(score_function, alphas, X_test,
+        vols, offsets = _compute_volumes(score_function, alphas, X_train,
+                                         X_test, 'monte-carlo',
                                          U, vol_tot_cube)
         # check increasing order of volumes and decreasing order of offsets
         assert_array_equal(vols, np.sort(vols))
@@ -118,12 +119,13 @@ def test_est_tuning():
         alphas = rng.randint(1, 100, size=5) / 100
         alphas = np.sort(alphas)
         clf_est, offsets_est = est_tuning(X_train, X_test, algo, param_grid,
-                                          alphas, U, vol_tot_cube)
+                                          alphas, 'monte-carlo',
+                                          U, vol_tot_cube)
 
         # check that clf_est gives the minimum auc
         score_function = clf_est.score_samples
-        vol_est, _ = _compute_volumes(score_function, alphas,
-                                      X_test, U, vol_tot_cube)
+        vol_est, _ = _compute_volumes(score_function, alphas, X_train,
+                                      X_test, 'monte-carlo', U, vol_tot_cube)
         auc_est = auc(alphas, vol_est)
 
         auc_algo = np.zeros(len(param_grid))
@@ -131,8 +133,8 @@ def test_est_tuning():
             clf = algo(**param)
             clf = clf.fit(X_train)
             score_function_p = clf.score_samples
-            vol_p, _ = _compute_volumes(score_function_p, alphas,
-                                        X_test, U, vol_tot_cube)
+            vol_p, _ = _compute_volumes(score_function_p, alphas, X_train,
+                                        X_test, 'monte-carlo', U, vol_tot_cube)
             auc_algo[p] = auc(alphas, vol_p)
 
         assert_equal(np.min(auc_algo), auc_est)
@@ -168,7 +170,8 @@ def test_anomaly_tuning():
         X_test = X[test]
 
         model, offset = est_tuning(X_train, X_test, AverageKLPE,
-                                   param_grid, alphas, U, vol_tot_cube)
+                                   param_grid, alphas,
+                                   'monte-carlo', U, vol_tot_cube)
         score_estimators_seq[i, :] = model.score_samples(X)
         offsets_seq[i, :] = offset
         i += 1
