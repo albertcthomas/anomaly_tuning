@@ -1,3 +1,5 @@
+import pytest
+
 import numpy as np
 
 from sklearn.model_selection import ShuffleSplit
@@ -18,12 +20,12 @@ from anomaly_tuning.tuning import est_tuning
 from anomaly_tuning.tuning import anomaly_tuning
 
 algorithms = [AverageKLPE, MaxKLPE, OCSVM, IsolationForest, KernelSmoothing]
-algo_param = {'AverageKLPE': {'k': np.arange(1, 10, 2), 'novelty': [True]},
-              'MaxKLPE': {'k': np.arange(1, 10, 2), 'novelty': [True]},
-              'OCSVM': {'sigma': np.linspace(0.01, 5., 5)},
-              'IsolationForest': {'max_samples': np.linspace(0.1, 1., 5),
+algo_param = {'AverageKLPE': {'k': np.arange(1, 10, 3), 'novelty': [True]},
+              'MaxKLPE': {'k': np.arange(1, 10, 3), 'novelty': [True]},
+              'OCSVM': {'sigma': np.linspace(0.01, 5., 3)},
+              'IsolationForest': {'max_samples': np.linspace(0.1, 1., 3),
                                   'random_state': [42]},
-              'KernelSmoothing': {'bandwidth': np.linspace(0.01, 5., 5)},
+              'KernelSmoothing': {'bandwidth': np.linspace(0.01, 5., 3)},
               }
 
 rng = np.random.RandomState(39)
@@ -71,7 +73,8 @@ def test_compute_volumes_toy():
     assert_array_equal(np.mean(pred_offsets, axis=1), alphas)
 
 
-def test_compute_volumes():
+@pytest.mark.parametrize('volume_computation', ['monte-carlo', 'tree'])
+def test_compute_volumes(volume_computation):
     """Check _compute_volumes for several masses."""
     estimators = [AverageKLPE(k=3, novelty=True), MaxKLPE(k=3, novelty=True),
                   OCSVM(sigma=1.),
@@ -88,7 +91,7 @@ def test_compute_volumes():
 
         score_function = clf.score_samples
         vols, offsets = _compute_volumes(score_function, alphas, X_train,
-                                         X_test, 'monte-carlo',
+                                         X_test, volume_computation,
                                          U, vol_tot_cube)
         # check increasing order of volumes and decreasing order of offsets
         assert_array_equal(vols, np.sort(vols))
