@@ -7,6 +7,7 @@ import warnings
 import numpy as np
 
 from sklearn.model_selection import ParameterGrid
+from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import auc
 from sklearn.utils import check_random_state
 
@@ -32,16 +33,24 @@ def _compute_volumes(score_function, alphas, X_train, X_test,
         score_U = score_function(U)
         vol_p = np.array([np.mean(score_U >= offset) for offset in offsets_p])
         vol_p = vol_p * vol_tot_cube
-    else:
+    elif volume_computation == 'tree':
+        # we fit the regression tree on the whole data set
         X = np.concatenate([X_train, X_test], axis=0)
+
         n_features = X.shape[1]
         X_range = np.zeros((n_features, 2))
         X_range[:, 0] = np.min(X, axis=0)
         X_range[:, 1] = np.max(X, axis=0)
 
-        reg = RegressionTree().fit(X, score_function(X))
-        vol_p = np.array([reg.volume_leafs(X_range, offset) for offset in
+        # regression tree grid search cv
+        tree_grid = {'min_samples_leaf': np.array([0.01, 0.05, 0.1, 0.2, 0.3])}
+        reg = GridSearchCV(RegressionTree(), tree_grid, cv=5)
+        reg.fit(X, score_function(X))
+        reg_best = reg.best_estimator_
+        vol_p = np.array([reg_best.volume_leafs(X_range, offset) for offset in
                           offsets_p])
+    else:
+        raise ValueError('Unknown volume computation method.')
 
     return vol_p, offsets_p
 
@@ -229,9 +238,11 @@ def anomaly_tuning(X,
         U = np.zeros((n_sim, n_features))
         for l in range(n_features):
             U[:, l] = rng.uniform(X_range[l, 0], X_range[l, 1], n_sim)
-    else:
+    elif volume_computation == 'tree':
         U = None
         vol_tot_cube = None
+    else:
+        raise ValueError('Unknown volume computation method.')
 
     res = Parallel(n_jobs=n_jobs, verbose=verbose)(
         delayed(est_tuning)(
