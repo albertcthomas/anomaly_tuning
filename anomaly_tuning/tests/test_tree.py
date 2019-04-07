@@ -1,3 +1,5 @@
+import pytest
+
 import numpy as np
 
 from anomaly_tuning.tree import RegressionTree
@@ -57,6 +59,11 @@ def test_volume_leafs():
     offset = 2
     volume = reg_tree.volume_leafs(X_range, offset)
     assert volume == 0.5
+
+    # only a subset of leafs
+    offset = 2.5
+    volume = reg_tree.volume_leafs(X_range, offset)
+    assert volume == pytest.approx(0.42)
 
     # all the leafs
     offset = -0.5
