@@ -219,9 +219,10 @@ def anomaly_tuning(X,
     """
 
     n_samples, n_features = X.shape
-    if n_features >= 5:
+    if n_features >= 4 and volume_computation == 'monte-carlo':
         warn_msg = ('n_features (%s) might be too high for volume estimation '
-                    'and thus deteriorates model selection.' % (n_features))
+                    'with monte-carlo integration and thus deteriorates '
+                    'model selection.' % (n_features))
         warnings.warn(warn_msg, UserWarning)
 
     param_grid = ParameterGrid(parameters)
