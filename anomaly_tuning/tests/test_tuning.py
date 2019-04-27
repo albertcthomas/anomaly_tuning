@@ -15,7 +15,7 @@ from anomaly_tuning.estimators import IsolationForest
 from anomaly_tuning.estimators import KernelSmoothing
 from anomaly_tuning.estimators import OCSVM
 from anomaly_tuning.tuning import _compute_volumes
-from anomaly_tuning.tuning import est_tuning
+from anomaly_tuning.tuning import _est_tuning
 from anomaly_tuning.tuning import anomaly_tuning
 
 algorithms = [AverageKLPE, MaxKLPE, OCSVM, IsolationForest, KernelSmoothing]
@@ -63,8 +63,8 @@ def test_compute_volumes_toy():
     grid = np.c_[xx.ravel(), yy.ravel()]
 
     alphas = rng.randint(1, 100, size=5) / 100
-    vols, offsets = _compute_volumes(score_function_toy, alphas, None, grid,
-                                     'monte-carlo', grid, 1.)
+    vols, offsets, _ = _compute_volumes(score_function_toy, alphas, None, grid,
+                                        'monte-carlo', grid, 1.)
     # check values of volume
     assert_array_equal(alphas, vols)
     # check values of offsets
@@ -89,9 +89,9 @@ def test_compute_volumes(volume_computation):
         max_test = np.max(clf_test)
 
         score_function = clf.score_samples
-        vols, offsets = _compute_volumes(score_function, alphas, X_train,
-                                         X_test, volume_computation,
-                                         U, vol_tot_cube)
+        vols, offsets, _ = _compute_volumes(score_function, alphas, X_train,
+                                            X_test, volume_computation,
+                                            U, vol_tot_cube)
         # check increasing order of volumes and decreasing order of offsets
         assert_array_equal(vols, np.sort(vols))
         assert_array_equal(offsets, -np.sort(-offsets))
@@ -120,14 +120,15 @@ def test_est_tuning():
         param_grid = ParameterGrid(parameters)
         alphas = rng.randint(1, 100, size=5) / 100
         alphas = np.sort(alphas)
-        clf_est, offsets_est = est_tuning(X_train, X_test, algo, param_grid,
-                                          alphas, 'monte-carlo',
-                                          U, vol_tot_cube)
+        clf_est, offsets_est, _ = _est_tuning(X_train, X_test, algo,
+                                              param_grid, alphas,
+                                              'monte-carlo', U, vol_tot_cube)
 
         # check that clf_est gives the minimum auc
         score_function = clf_est.score_samples
-        vol_est, _ = _compute_volumes(score_function, alphas, X_train,
-                                      X_test, 'monte-carlo', U, vol_tot_cube)
+        vol_est, _, _ = _compute_volumes(score_function, alphas, X_train,
+                                         X_test, 'monte-carlo', U,
+                                         vol_tot_cube)
         auc_est = auc(alphas, vol_est)
 
         auc_algo = np.zeros(len(param_grid))
@@ -135,8 +136,9 @@ def test_est_tuning():
             clf = algo(**param)
             clf = clf.fit(X_train)
             score_function_p = clf.score_samples
-            vol_p, _ = _compute_volumes(score_function_p, alphas, X_train,
-                                        X_test, 'monte-carlo', U, vol_tot_cube)
+            vol_p, _, _ = _compute_volumes(score_function_p, alphas, X_train,
+                                           X_test, 'monte-carlo', U,
+                                           vol_tot_cube)
             auc_algo[p] = auc(alphas, vol_p)
 
         assert np.min(auc_algo) == auc_est
@@ -156,9 +158,9 @@ def test_anomaly_tuning():
 
     parameters = {'k': np.arange(1, 10), 'novelty': [True]}
     alphas = np.array([0.2, 0.5, 0.9])
-    models, offsets = anomaly_tuning(X, AverageKLPE, alphas=alphas,
-                                     parameters=parameters,
-                                     cv=cv, n_sim=100)
+    models, offsets, _ = anomaly_tuning(X, AverageKLPE, alphas=alphas,
+                                        parameters=parameters,
+                                        cv=cv, n_sim=100)
     score_estimators = np.empty((n_estimator, len(X)))
     for i in range(n_estimator):
         score_estimators[i, :] = models[i].score_samples(X)
@@ -171,9 +173,9 @@ def test_anomaly_tuning():
         X_train = X[train]
         X_test = X[test]
 
-        model, offset = est_tuning(X_train, X_test, AverageKLPE,
-                                   param_grid, alphas,
-                                   'monte-carlo', U, vol_tot_cube)
+        model, offset, _ = _est_tuning(X_train, X_test, AverageKLPE,
+                                       param_grid, alphas,
+                                       'monte-carlo', U, vol_tot_cube)
         score_estimators_seq[i, :] = model.score_samples(X)
         offsets_seq[i, :] = offset
         i += 1

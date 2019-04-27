@@ -32,6 +32,8 @@ def _compute_volumes(score_function, alphas, X_train, X_test,
         score_U = score_function(U)
         vol_p = np.array([np.mean(score_U >= offset) for offset in offsets_p])
         vol_p = vol_p * vol_tot_cube
+        tree_perf = None
+
     elif volume_computation == 'tree':
         # we fit the regression tree on the whole data set
         X = np.concatenate([X_train, X_test], axis=0)
@@ -49,16 +51,18 @@ def _compute_volumes(score_function, alphas, X_train, X_test,
         reg = GridSearchCV(RegressionTree(), tree_grid, cv=5)
         reg.fit(X, score_function(X))
         reg_best = reg.best_estimator_
+        tree_perf = reg.best_score_
         vol_p = np.array([reg_best.volume_leafs(X_range, offset) for offset in
                           offsets_p])
+
     else:
         raise ValueError('Unknown volume computation method.')
 
-    return vol_p, offsets_p
+    return vol_p, offsets_p, tree_perf
 
 
-def est_tuning(X_train, X_test, base_estimator, param_grid,
-               alphas, volume_computation, U, vol_tot_cube):
+def _est_tuning(X_train, X_test, base_estimator, param_grid,
+                alphas, volume_computation, U, vol_tot_cube):
     """Learn the best hyperparameters of base_estimator from the random
     splitting of the data set into X_train and X_test.
 
@@ -112,9 +116,16 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
         Offsets of the score obtained from clf_est corresponding to the
         probabilities of the alphas array
 
+    tree_perfs : array, shape (n_parameters,) or None
+        Cross validated performance of the regression trees used to compute the
+        volumes when volume_computation='tree'. Otherwise None.
     """
     offsets_all = np.zeros((len(alphas), len(param_grid)))
     auc_est = np.zeros(len(param_grid))
+    if volume_computation == 'tree':
+        tree_perfs = np.zeros(len(param_grid))
+    else:
+        tree_perfs = None
 
     # Grid search of best hyperparameters
     for p, param in enumerate(param_grid):
@@ -122,9 +133,14 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
         clf = base_estimator(**param)
         clf = clf.fit(X_train)
         score_function = clf.score_samples
-        vol_p, offsets_p = _compute_volumes(score_function, alphas, X_train,
-                                            X_test, volume_computation,
-                                            U, vol_tot_cube)
+
+        vol_p, offsets_p, tree_perf_p = _compute_volumes(
+            score_function, alphas, X_train, X_test, volume_computation,
+            U, vol_tot_cube)
+
+        if volume_computation == 'tree':
+            tree_perfs[p] = tree_perf_p
+
         auc_est[p] = auc(alphas, vol_p)
         offsets_all[:, p] = offsets_p
 
@@ -137,7 +153,7 @@ def est_tuning(X_train, X_test, base_estimator, param_grid,
     clf_est.fit(X_train)
     offsets_est = offsets_all[:, best_p]
 
-    return clf_est, offsets_est
+    return clf_est, offsets_est, tree_perfs
 
 
 def anomaly_tuning(X,
@@ -218,6 +234,9 @@ def anomaly_tuning(X,
         Offsets of the anomaly detection estimators of the ensemble
         corresponding to the probabilities of the alphas array
 
+    tree_perfs : array, shape (n_estimators, n_parameters) or None
+        Cross validated performance of the regression trees used to compute the
+        volumes when volume_computation='tree'. Otherwise None.
     """
 
     n_samples, n_features = X.shape
@@ -248,7 +267,7 @@ def anomaly_tuning(X,
         raise ValueError('Unknown volume computation method.')
 
     res = Parallel(n_jobs=n_jobs, verbose=verbose)(
-        delayed(est_tuning)(
+        delayed(_est_tuning)(
             X[train], X[test],
             base_estimator,
             param_grid,
@@ -261,4 +280,9 @@ def anomaly_tuning(X,
     models = list(list(zip(*res))[0])
     offsets = np.array(list(zip(*res))[1])
 
-    return models, offsets
+    if volume_computation == 'tree':
+        tree_perfs = np.array(list(zip(*res))[2])
+    else:
+        tree_perfs = None
+
+    return models, offsets, tree_perfs
