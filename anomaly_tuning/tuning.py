@@ -119,6 +119,10 @@ def _est_tuning(X_train, X_test, base_estimator, param_grid,
     tree_perfs : array, shape (n_parameters,) or None
         Cross validated performance of the regression trees used to compute the
         volumes when volume_computation='tree'. Otherwise None.
+
+    auc_est : array, shape (n_parameters,)
+        Area under estimated MV curves for all parameters. Returned to plot
+        cross validation curves.
     """
     offsets_all = np.zeros((len(alphas), len(param_grid)))
     auc_est = np.zeros(len(param_grid))
@@ -153,7 +157,7 @@ def _est_tuning(X_train, X_test, base_estimator, param_grid,
     clf_est.fit(X_train)
     offsets_est = offsets_all[:, best_p]
 
-    return clf_est, offsets_est, tree_perfs
+    return clf_est, offsets_est, tree_perfs, auc_est
 
 
 def anomaly_tuning(X,
@@ -237,6 +241,10 @@ def anomaly_tuning(X,
     tree_perfs : array, shape (n_estimators, n_parameters) or None
         Cross validated performance of the regression trees used to compute the
         volumes when volume_computation='tree'. Otherwise None.
+
+    auc_est : array, shape (n_estimators, n_parameters)
+        Area under estimated MV curves for all parameters and all random
+        splits. Returned to plot cross validation curves.
     """
 
     n_samples, n_features = X.shape
@@ -285,4 +293,6 @@ def anomaly_tuning(X,
     else:
         tree_perfs = None
 
-    return models, offsets, tree_perfs
+    auc_est = np.array(list(zip(*res))[3])
+
+    return models, offsets, tree_perfs, auc_est

@@ -120,15 +120,15 @@ def test_est_tuning():
         param_grid = ParameterGrid(parameters)
         alphas = rng.randint(1, 100, size=5) / 100
         alphas = np.sort(alphas)
-        clf_est, offsets_est, _ = _est_tuning(X_train, X_test, algo,
-                                              param_grid, alphas,
-                                              'monte-carlo', U, vol_tot_cube)
+        clf_est, offsets_est, *rest = _est_tuning(
+            X_train, X_test, algo, param_grid, alphas,
+            'monte-carlo', U, vol_tot_cube)
 
         # check that clf_est gives the minimum auc
         score_function = clf_est.score_samples
-        vol_est, _, _ = _compute_volumes(score_function, alphas, X_train,
-                                         X_test, 'monte-carlo', U,
-                                         vol_tot_cube)
+        vol_est, *rest = _compute_volumes(score_function, alphas, X_train,
+                                          X_test, 'monte-carlo', U,
+                                          vol_tot_cube)
         auc_est = auc(alphas, vol_est)
 
         auc_algo = np.zeros(len(param_grid))
@@ -136,9 +136,9 @@ def test_est_tuning():
             clf = algo(**param)
             clf = clf.fit(X_train)
             score_function_p = clf.score_samples
-            vol_p, _, _ = _compute_volumes(score_function_p, alphas, X_train,
-                                           X_test, 'monte-carlo', U,
-                                           vol_tot_cube)
+            vol_p, *rest = _compute_volumes(score_function_p, alphas, X_train,
+                                            X_test, 'monte-carlo', U,
+                                            vol_tot_cube)
             auc_algo[p] = auc(alphas, vol_p)
 
         assert np.min(auc_algo) == auc_est
@@ -158,9 +158,9 @@ def test_anomaly_tuning():
 
     parameters = {'k': np.arange(1, 10), 'novelty': [True]}
     alphas = np.array([0.2, 0.5, 0.9])
-    models, offsets, _ = anomaly_tuning(X, AverageKLPE, alphas=alphas,
-                                        parameters=parameters,
-                                        cv=cv, n_sim=100)
+    models, offsets, *rest = anomaly_tuning(X, AverageKLPE, alphas=alphas,
+                                            parameters=parameters,
+                                            cv=cv, n_sim=100)
     score_estimators = np.empty((n_estimator, len(X)))
     for i in range(n_estimator):
         score_estimators[i, :] = models[i].score_samples(X)
@@ -173,9 +173,9 @@ def test_anomaly_tuning():
         X_train = X[train]
         X_test = X[test]
 
-        model, offset, _ = _est_tuning(X_train, X_test, AverageKLPE,
-                                       param_grid, alphas,
-                                       'monte-carlo', U, vol_tot_cube)
+        model, offset, *rest = _est_tuning(X_train, X_test, AverageKLPE,
+                                           param_grid, alphas,
+                                           'monte-carlo', U, vol_tot_cube)
         score_estimators_seq[i, :] = model.score_samples(X)
         offsets_seq[i, :] = offset
         i += 1
