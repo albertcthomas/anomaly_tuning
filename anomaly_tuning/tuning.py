@@ -62,7 +62,8 @@ def _compute_volumes(score_function, alphas, X_train, X_test,
 
 
 def _est_tuning(X_train, X_test, base_estimator, param_grid,
-                alphas, volume_computation, U, vol_tot_cube):
+                alphas, volume_computation, U, vol_tot_cube, random=False,
+                random_state=42):
     """Learn the best hyperparameters of base_estimator from the random
     splitting of the data set into X_train and X_test.
 
@@ -106,6 +107,12 @@ def _est_tuning(X_train, X_test, base_estimator, param_grid,
         Volume of the hypercube enclosing the data when
         volume_computation='monte-carlo'. Otherwise None.
 
+    random : bool, optional
+        If true the parameter is randomly chosen in the grid.
+
+    random_state : int, optional
+        Seed used by the random number generator.
+
     Returns
     -------
     clf_est : base_estimator object
@@ -130,6 +137,17 @@ def _est_tuning(X_train, X_test, base_estimator, param_grid,
         tree_perfs = np.zeros(len(param_grid))
     else:
         tree_perfs = None
+
+    if random:
+        rng = np.random.RandomState(random_state)
+        param = rng.choice(list(param_grid))
+        clf_est = base_estimator(**param)
+        clf_est = clf_est.fit(X_train)
+
+        score_test = clf_est.score_samples(X_test)
+        offsets = np.percentile(score_test, 100 * (1 - alphas))
+
+        return clf_est, offsets, None, None
 
     # Grid search of best hyperparameters
     for p, param in enumerate(param_grid):
@@ -170,6 +188,7 @@ def anomaly_tuning(X,
                    random_state=42,
                    n_jobs=1,
                    verbose=0,
+                   random=False,
                    ):
     """The data set X is randomly split into a training set X_train and a test
     set X_test. Given an anomaly detection algorithm, a scoring function is
@@ -227,6 +246,9 @@ def anomaly_tuning(X,
     verbose : int, optional (default=0)
         Controls the verbosity when fitting the estimator for each cv split.
 
+    random : bool, optional (default=False)
+        If true the parameter is randomly chosen in the grid.
+
     Returns
     -------
     models : list, shape (n_estimator)
@@ -282,7 +304,9 @@ def anomaly_tuning(X,
             alphas,
             volume_computation,
             U,
-            vol_tot_cube)
+            vol_tot_cube,
+            random,
+            random_state)
         for train, test in cv.split(X))
 
     models = list(list(zip(*res))[0])
