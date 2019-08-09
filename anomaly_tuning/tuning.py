@@ -43,7 +43,10 @@ def _compute_volumes(score_function, alphas, X_train, X_test,
         X_range[:, 1] = np.max(X, axis=0)
 
         # regression tree grid search cv
-        tree_grid = {'min_samples_leaf': np.array([0.01, 0.05, 0.1, 0.2, 0.3])}
+        # min_sample_leaf grid has to be a list to preserve type: if numpy
+        # array then 1 is cast as a float...
+        tree_grid = {'min_samples_leaf': [0.01, 0.05, 0.1, 0.2, 0.3,
+                                          0.4, 0.5, 1]}
         reg = GridSearchCV(RegressionTree(), tree_grid, cv=5)
         reg.fit(X, score_function(X))
         reg_best = reg.best_estimator_
