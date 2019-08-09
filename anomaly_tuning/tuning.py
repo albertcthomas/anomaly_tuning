@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import auc
 from sklearn.utils import check_random_state
-from sklearn.externals.joblib import Parallel, delayed
+from joblib import Parallel, delayed
 
 from .estimators import AverageKLPE
 

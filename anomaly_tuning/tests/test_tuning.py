@@ -4,7 +4,6 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn.model_selection import ParameterGrid
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import auc
-from sklearn.utils.testing import assert_true
 from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_array_almost_equal
 from sklearn.utils.testing import assert_equal
@@ -95,11 +94,10 @@ def test_compute_volumes():
         assert_array_equal(offsets, -np.sort(-offsets))
 
         # check volumes in [0, vol_tot_cube]
-        assert_true(np.all(0 <= vols) and np.all(vols <= vol_tot_cube))
+        assert np.all(0 <= vols) and np.all(vols <= vol_tot_cube)
 
         # check offset values
-        assert_true(np.all(min_test <= offsets) and
-                    np.all(offsets <= max_test))
+        assert np.all(min_test <= offsets) and np.all(offsets <= max_test)
 
         proba_offsets_pos = (clf_test >= offsets[:, np.newaxis])
         # this test requires to have a large number of samples because
