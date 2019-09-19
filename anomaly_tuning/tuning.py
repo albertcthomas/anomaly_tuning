@@ -5,7 +5,6 @@
 import numpy as np
 
 from sklearn.model_selection import ParameterGrid
-from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import auc
 from sklearn.utils import check_random_state
 from joblib import Parallel, delayed
@@ -41,17 +40,11 @@ def _compute_volumes(score_function, alphas, X_train, X_test,
         X_range[:, 0] = np.min(X, axis=0)
         X_range[:, 1] = np.max(X, axis=0)
 
-        # regression tree grid search cv
-        # min_sample_leaf grid has to be a list to preserve type: if numpy
-        # array then 1 is cast as a float...
-        tree_grid = {'min_samples_leaf': [0.01, 0.05, 0.1, 0.2, 0.3,
-                                          0.4, 0.5, 1]}
-        reg = GridSearchCV(RegressionTree(), tree_grid, cv=5)
+        reg = RegressionTree(min_impurity_decrease=0, min_samples_leaf=1)
         reg.fit(X, score_function(X))
-        reg_best = reg.best_estimator_
-        tree_perf = reg.best_score_
-        vol_p = np.array([reg_best.volume_leafs(X_range, offset) for offset in
+        vol_p = np.array([reg.volume_leafs(X_range, offset) for offset in
                           offsets_p])
+        tree_perf = reg.score(X, score_function(X))
 
     else:
         raise ValueError('Unknown volume computation method.')
